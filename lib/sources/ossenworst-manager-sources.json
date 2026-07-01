@@ -1,0 +1,994 @@
+{
+  "meta": {
+    "project": "Ossenworst Manager",
+    "description": "Ajax Amsterdam news sources for automated aggregation pipeline",
+    "last_updated": "2026-07-01",
+    "notes": "status: verified = feed URL tested and working, found = feed URL found but not yet tested, no_feed = no RSS feed available (use scraping or API), unknown = needs investigation. fetch_method: rss | scrape | api | x_feed. tier: 1 = official/premium journalist, 2 = established sports media, 3 = fan sites/talk shows/social"
+  },
+  "sources": {
+    "nederland": [
+      {
+        "name": "Ajax.nl",
+        "url": "https://www.ajax.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 1,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Officieel clubkanaal. Geen publieke RSS gevonden. Nieuwspagina scrapen."
+      },
+      {
+        "name": "NOS Sport",
+        "url": "https://nos.nl/sport",
+        "feed_url": "https://feeds.nos.nl/nossportalgemeen",
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "verified",
+        "notes": "Bevestigd werkende RSS. Algemeen sportnieuws, filteren op Ajax-gerelateerde berichten."
+      },
+      {
+        "name": "Ajax Supporters",
+        "url": "https://ajax.supporters.nl",
+        "feed_url": "https://ajax.supporters.nl/nieuws/rss.xml",
+        "language": "nl",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "verified",
+        "notes": "Gefetcht en werkend op 2026-07-01."
+      },
+      {
+        "name": "VoetbalPrimeur",
+        "url": "https://www.voetbalprimeur.nl",
+        "feed_url": "https://www.voetbalprimeur.nl/pagina/rss-feeds",
+        "language": "nl",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "RSS-overzichtspagina bestaat. Heeft sub-feeds waaronder /rss-feeds/transfergeruchten. Exacte XML-URLs moeten van overzichtspagina geëxtraheerd worden."
+      },
+      {
+        "name": "Soccernews.nl",
+        "url": "https://www.soccernews.nl",
+        "feed_url": "https://www.soccernews.nl/news",
+        "language": "nl",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Feedspot noemt RSS feed. Exacte XML-URL moet geverifieerd worden, mogelijk /feed of /rss."
+      },
+      {
+        "name": "Voetbalzone",
+        "url": "https://www.voetbalzone.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Feedspot noemt RSS maar geen directe publieke feed-URL gevonden. Grootste onafhankelijke voetbalsite NL."
+      },
+      {
+        "name": "Voetbal International",
+        "url": "https://www.vi.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Paywall. Feedspot noemt RSS maar geen publieke URL. Koppen en leads mogelijk via scraping."
+      },
+      {
+        "name": "De Telegraaf",
+        "url": "https://www.telegraaf.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 1,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Paywall. Geen publieke RSS. Mike Verweij is de belangrijkste Ajax-journalist. Koppen scrapen."
+      },
+      {
+        "name": "AD Sportwereld",
+        "url": "https://www.ad.nl/sportwereld",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "DPG Media. Feedspot heeft AD.nl feeds maar geen specifieke sport-feed URL bevestigd."
+      },
+      {
+        "name": "ESPN NL",
+        "url": "https://www.espn.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Geen publieke RSS gevonden."
+      },
+      {
+        "name": "Ajax Showtime",
+        "url": "https://www.ajaxshowtime.com",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Populaire fansite. Feed-URL moet onderzocht worden."
+      },
+      {
+        "name": "Headliner.nl (Ajax)",
+        "url": "https://www.headliner.nl/nl/s/37_ajax_nieuws.html",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Aggregator. Geen eigen RSS maar Ajax-nieuwspagina is scrapeable."
+      },
+      {
+        "name": "Ajax Freaks",
+        "url": "https://www.ajaxfreaks.nl",
+        "feed_url": "https://www.ajaxfreaks.nl/page/rss",
+        "language": "nl",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Heeft een RSS-pagina."
+      },
+      {
+        "name": "AT5",
+        "url": "https://www.at5.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Lokale Amsterdamse zender. Feed-URL moet onderzocht worden."
+      },
+      {
+        "name": "Ajax Daily",
+        "url": "https://www.ajaxdaily.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Engelstalig Ajax-nieuws. Feed-URL moet onderzocht worden."
+      },
+      {
+        "name": "De Volkskrant",
+        "url": "https://www.volkskrant.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "DPG Media. Paywall. Geen publieke sport-RSS. Scannen op origineel Ajax-nieuws."
+      },
+      {
+        "name": "Trouw",
+        "url": "https://www.trouw.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "DPG Media. Paywall. Geen publieke sport-RSS."
+      },
+      {
+        "name": "Het Parool",
+        "url": "https://www.parool.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "DPG Media. Paywall. Amsterdamse krant, relevant voor Ajax-nieuws."
+      },
+      {
+        "name": "KNVB",
+        "url": "https://www.knvb.nl",
+        "feed_url": "https://knvb.com/knvb_node/rss/news",
+        "language": "nl",
+        "tier": 1,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Officieel. Relevant voor competitiezaken, tuchtrecht, scheidsrechterszaken."
+      },
+      {
+        "name": "Eredivisie.nl",
+        "url": "https://www.eredivisie.nl",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feedspot noemt een feed maar exacte URL niet bevestigd."
+      },
+      {
+        "name": "Football Oranje",
+        "url": "https://football-oranje.com",
+        "feed_url": "https://football-oranje.com/feed",
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Engelstalig over Eredivisie/Oranje."
+      }
+    ],
+    "engeland_internationaal": [
+      {
+        "name": "BBC Sport Football",
+        "url": "https://www.bbc.co.uk/sport/football",
+        "feed_url": "https://feeds.bbci.co.uk/sport/football/rss.xml",
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "verified",
+        "notes": "Bekende werkende feed."
+      },
+      {
+        "name": "The Guardian Football",
+        "url": "https://www.theguardian.com/football",
+        "feed_url": "https://www.theguardian.com/football/rss",
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "verified",
+        "notes": "Bekende werkende feed. Heeft ook transfer-specifieke feed."
+      },
+      {
+        "name": "Sky Sports Football",
+        "url": "https://www.skysports.com/football",
+        "feed_url": "https://www.skysports.com/rss/12040",
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Feedspot verwijst naar /rss/12040 als football feed."
+      },
+      {
+        "name": "TalkSPORT Transfers",
+        "url": "https://talksport.com/football/transfers/",
+        "feed_url": "https://talksport.com/football/transfers/",
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Feedspot noemt RSS."
+      },
+      {
+        "name": "Football365",
+        "url": "https://www.football365.com",
+        "feed_url": "https://www.football365.com/f365-features/feed",
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Features feed gevonden. Transfer gossip column is populair."
+      },
+      {
+        "name": "FourFourTwo",
+        "url": "https://www.fourfourtwo.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feedspot noemt RSS maar geen directe URL."
+      },
+      {
+        "name": "Goal.com",
+        "url": "https://www.goal.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feedspot noemt RSS maar geen directe URL."
+      },
+      {
+        "name": "ESPN FC",
+        "url": "https://www.espn.com/soccer/",
+        "feed_url": null,
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feedspot noemt RSS maar geen directe URL."
+      },
+      {
+        "name": "90min",
+        "url": "https://www.90min.com",
+        "feed_url": "https://www.90min.com/posts.rss",
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Feed URL gevonden."
+      },
+      {
+        "name": "TEAMtalk",
+        "url": "https://www.teamtalk.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feedspot noemt RSS."
+      },
+      {
+        "name": "CaughtOffside",
+        "url": "https://www.caughtoffside.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feedspot noemt RSS."
+      },
+      {
+        "name": "SoccerNews.com",
+        "url": "https://www.soccernews.com",
+        "feed_url": "https://www.soccernews.com/feed",
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Feed URL gevonden."
+      },
+      {
+        "name": "Football Italia",
+        "url": "https://football-italia.net",
+        "feed_url": "https://football-italia.net/rss.xml",
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Engelstalig over Italiaans voetbal. Feed URL gevonden."
+      },
+      {
+        "name": "Football Espana",
+        "url": "https://football-espana.net",
+        "feed_url": "https://football-espana.net/feed",
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Engelstalig over Spaans voetbal."
+      },
+      {
+        "name": "OneFootball",
+        "url": "https://onefootball.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feedspot noemt RSS maar geen directe URL."
+      },
+      {
+        "name": "The Athletic",
+        "url": "https://www.nytimes.com/athletic",
+        "feed_url": "https://nytimes.com/athletic/rss/news",
+        "language": "en",
+        "tier": 1,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Paywall. RSS feed via NYT. David Ornstein schrijft hier."
+      }
+    ],
+    "transfer_specialisten": [
+      {
+        "name": "Fabrizio Romano",
+        "url": "https://x.com/FabrizioRomano",
+        "feed_url": null,
+        "language": "en",
+        "tier": 1,
+        "fetch_method": "x_feed",
+        "status": "no_feed",
+        "notes": "Geen RSS. X/Twitter monitoring of nieuwsbrief. Heeft ook Daily Briefing nieuwsbrief."
+      },
+      {
+        "name": "David Ornstein",
+        "url": "https://x.com/David_Ornstein",
+        "feed_url": null,
+        "language": "en",
+        "tier": 1,
+        "fetch_method": "x_feed",
+        "status": "no_feed",
+        "notes": "Schrijft bij The Athletic. X monitoring."
+      },
+      {
+        "name": "Florian Plettenberg",
+        "url": "https://x.com/Plettigoal",
+        "feed_url": null,
+        "language": "de",
+        "tier": 1,
+        "fetch_method": "x_feed",
+        "status": "no_feed",
+        "notes": "Sky Sport DE. X monitoring."
+      },
+      {
+        "name": "Gianluca Di Marzio",
+        "url": "https://gianlucadimarzio.com",
+        "feed_url": null,
+        "language": "it",
+        "tier": 1,
+        "fetch_method": "rss",
+        "status": "unknown",
+        "notes": "Feedspot noemt RSS. Eigen site, feed-URL moet onderzocht."
+      },
+      {
+        "name": "Matteo Moretto",
+        "url": "https://x.com/MatteMoretto",
+        "feed_url": null,
+        "language": "es",
+        "tier": 1,
+        "fetch_method": "x_feed",
+        "status": "no_feed",
+        "notes": "X monitoring."
+      },
+      {
+        "name": "Ekrem Konur",
+        "url": "https://x.com/Ekremkonur",
+        "feed_url": null,
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "x_feed",
+        "status": "no_feed",
+        "notes": "X monitoring."
+      },
+      {
+        "name": "Mike Verweij",
+        "url": "https://x.com/MikeVerweij",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 1,
+        "fetch_method": "x_feed",
+        "status": "no_feed",
+        "notes": "De Telegraaf. Belangrijkste Ajax-journalist. X monitoring."
+      }
+    ],
+    "transfer_aggregatoren": [
+      {
+        "name": "TransferFeed",
+        "url": "https://transferfeed.com/clubs/ajax/475",
+        "feed_url": null,
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Heeft Ajax-specifieke pagina met geciteerde bronnen per gerucht. Zeer relevant. Scrapen."
+      },
+      {
+        "name": "Transfermarkt",
+        "url": "https://www.transfermarkt.com",
+        "feed_url": null,
+        "language": "de",
+        "tier": 2,
+        "fetch_method": "api",
+        "status": "no_feed",
+        "notes": "Heeft RSS-pagina maar blokkeert bots. Gratis dataset: github.com/dcaribou/transfermarkt-datasets (wekelijks bijgewerkt). Apify scrapers beschikbaar."
+      },
+      {
+        "name": "NewsNow Ajax",
+        "url": "https://www.newsnow.co.uk/h/Sport/Football/Europe/Netherlands/Ajax",
+        "feed_url": null,
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Aggregator. Geen directe RSS maar scrapeable."
+      }
+    ],
+    "spanje": [
+      {
+        "name": "Marca (portada)",
+        "url": "https://www.marca.com",
+        "feed_url": "https://e00-marca.uecdn.es/rss/portada.xml",
+        "language": "es",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Hoofdfeed. Heeft ook subsecties: /rss/futbol/, /rss/futbol/futbol-internacional/"
+      },
+      {
+        "name": "Marca English",
+        "url": "https://www.marca.com/en",
+        "feed_url": "https://e00-marca.uecdn.es/rss/en/index.xml",
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Engelstalige editie."
+      },
+      {
+        "name": "AS",
+        "url": "https://as.com",
+        "feed_url": null,
+        "language": "es",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "unknown",
+        "notes": "Feedspot verwijst naar feeds.as.com maar exacte URL niet bevestigd."
+      },
+      {
+        "name": "Mundo Deportivo",
+        "url": "https://www.mundodeportivo.com",
+        "feed_url": "https://www.mundodeportivo.com/feed/rss/",
+        "language": "es",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Heeft subsecties: /feed/rss/futbol, /feed/rss/futbol/internacional"
+      },
+      {
+        "name": "Sport",
+        "url": "https://www.sport.es",
+        "feed_url": null,
+        "language": "es",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Barcelonese sportkrant. Feed-URL moet onderzocht."
+      }
+    ],
+    "italie": [
+      {
+        "name": "La Gazzetta dello Sport",
+        "url": "https://www.gazzetta.it",
+        "feed_url": "https://www.gazzetta.it/rss/home.xml",
+        "language": "it",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Meerdere feeds: /rss/home.xml (algemeen), /dynamic-feed/rss/section/Calcio/Serie-A.xml (Serie A). Let op: DOCTYPE issues bij sommige readers."
+      },
+      {
+        "name": "Corriere dello Sport",
+        "url": "https://www.corrieredellosport.it",
+        "feed_url": "https://www.corrieredellosport.it/rss/rss.shtml",
+        "language": "it",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "RSS-pagina gevonden."
+      },
+      {
+        "name": "Tuttosport",
+        "url": "https://www.tuttosport.com",
+        "feed_url": "https://www.tuttosport.com/rss/calcio",
+        "language": "it",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Feed URL eerder gevonden."
+      },
+      {
+        "name": "TuttoMercatoWeb",
+        "url": "https://www.tuttomercatoweb.com",
+        "feed_url": null,
+        "language": "it",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "unknown",
+        "notes": "Feedspot noemt per-club feeds. Calciomercato-specialist. Exacte feed-URL moet onderzocht."
+      },
+      {
+        "name": "Calciomercato.com",
+        "url": "https://www.calciomercato.com",
+        "feed_url": "https://feeds.footballco.com/calcio/",
+        "language": "it",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Feedspot bevestigt. Exacte pad mogelijk langer (afgekapt in Feedspot). Heeft ook per-competitie feeds."
+      },
+      {
+        "name": "Calciomercato.it",
+        "url": "https://www.calciomercato.it",
+        "feed_url": null,
+        "language": "it",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "unknown",
+        "notes": "Ander domein dan calciomercato.com. Feedspot noemt het."
+      },
+      {
+        "name": "Gianluca Di Marzio (site)",
+        "url": "https://gianlucadimarzio.com",
+        "feed_url": null,
+        "language": "it",
+        "tier": 1,
+        "fetch_method": "rss",
+        "status": "unknown",
+        "notes": "Eigen site van Di Marzio. Feedspot noemt RSS."
+      }
+    ],
+    "duitsland": [
+      {
+        "name": "Kicker (aktuell)",
+        "url": "https://www.kicker.de",
+        "feed_url": "https://newsfeed.kicker.de/news/aktuell",
+        "language": "de",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "verified",
+        "notes": "Bevestigd. Alle nieuwsfeeds via newsfeed.kicker.de. OPML met alle feeds: https://newsfeed.kicker.de/opml"
+      },
+      {
+        "name": "Kicker (fussball)",
+        "url": "https://www.kicker.de",
+        "feed_url": "https://newsfeed.kicker.de/news/fussball",
+        "language": "de",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "verified",
+        "notes": "Voetbal-specifieke feed."
+      },
+      {
+        "name": "Sport Bild",
+        "url": "https://sportbild.bild.de",
+        "feed_url": null,
+        "language": "de",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Geen publieke RSS gevonden. Bild-groep, paywall."
+      }
+    ],
+    "frankrijk": [
+      {
+        "name": "L'Équipe (football)",
+        "url": "https://www.lequipe.fr",
+        "feed_url": "https://dwh.lequipe.fr/api/edito/rss?path=/Football/",
+        "language": "fr",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Gevonden via atlasflux.saynete.net. Heeft subsecties."
+      },
+      {
+        "name": "Foot Mercato",
+        "url": "https://www.footmercato.net",
+        "feed_url": null,
+        "language": "fr",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Heeft RSS-pagina op /contact-mentions-legales-flux-rss. Grootste onafhankelijke voetbalsite FR. Exacte feed-URLs staan op die pagina."
+      },
+      {
+        "name": "Le 10 Sport (football)",
+        "url": "https://le10sport.com",
+        "feed_url": "https://le10sport.com/fr/rss/football/",
+        "language": "fr",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Bevestigd via atlasflux."
+      },
+      {
+        "name": "Le 10 Sport (mercato)",
+        "url": "https://le10sport.com",
+        "feed_url": "https://le10sport.com/fr/rss/football/mercato/",
+        "language": "fr",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Transfer-specifieke feed. Bevestigd via atlasflux."
+      },
+      {
+        "name": "RMC Sport",
+        "url": "https://rmcsport.bfmtv.com",
+        "feed_url": null,
+        "language": "fr",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feed-URL moet onderzocht."
+      },
+      {
+        "name": "Le Parisien Sport",
+        "url": "https://www.leparisien.fr/sports",
+        "feed_url": null,
+        "language": "fr",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feed-URL moet onderzocht."
+      },
+      {
+        "name": "France 24 Sport",
+        "url": "https://www.france24.com/en/sport",
+        "feed_url": "https://www.france24.com/en/sport/rss",
+        "language": "en",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Engelstalig. Gevonden via Feedspot."
+      }
+    ],
+    "portugal": [
+      {
+        "name": "A Bola",
+        "url": "https://www.abola.pt",
+        "feed_url": "https://www.abola.pt/rss/index.aspx",
+        "language": "pt",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Oude URL gevonden via forum. Mogelijk verouderd, moet getest."
+      },
+      {
+        "name": "Record",
+        "url": "https://www.record.pt",
+        "feed_url": "https://www.record.pt/rss/rss.asp",
+        "language": "pt",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Oude URL gevonden via forum. Mogelijk verouderd, moet getest."
+      },
+      {
+        "name": "O Jogo",
+        "url": "https://www.ojogo.pt",
+        "feed_url": "https://www.ojogo.pt/rss/Noticias.rss",
+        "language": "pt",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Oude URL gevonden via forum. Mogelijk verouderd, moet getest."
+      }
+    ],
+    "turkije": [
+      {
+        "name": "Fanatik",
+        "url": "https://www.fanatik.com.tr",
+        "feed_url": null,
+        "language": "tr",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "no_feed",
+        "notes": "Geen publieke RSS gevonden. Turkse sportmedia. Scrapen nodig."
+      },
+      {
+        "name": "Hürriyet Spor",
+        "url": "https://www.hurriyet.com.tr/sporarena",
+        "feed_url": null,
+        "language": "tr",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "GitHub Gist met Turkse RSS-feeds bestaat (gist.github.com/e-budur/983d969c0f6cf756bbbb60a2892aa964) maar kon niet geëxtraheerd worden. Feed-URL moet onderzocht."
+      }
+    ],
+    "belgie": [
+      {
+        "name": "HLN Sport",
+        "url": "https://www.hln.be/sport",
+        "feed_url": null,
+        "language": "nl",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "DPG Media. Feed-URL moet onderzocht."
+      },
+      {
+        "name": "RTBF Sport (Jupiler Pro League)",
+        "url": "https://www.rtbf.be/sport",
+        "feed_url": "https://rss.rtbf.be/article/rss/highlight_rtbf_sport-football-jupiler-pro-league.xml?source=internal",
+        "language": "fr",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Gevonden via atlasflux. Franstalig."
+      }
+    ],
+    "scandinavie": [
+      {
+        "name": "Bold.dk",
+        "url": "https://www.bold.dk",
+        "feed_url": null,
+        "language": "da",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Deens. Feed-URL moet onderzocht."
+      },
+      {
+        "name": "Tipsbladet",
+        "url": "https://www.tipsbladet.dk",
+        "feed_url": null,
+        "language": "da",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Deens. Feed-URL moet onderzocht."
+      }
+    ],
+    "zuid_amerika": [
+      {
+        "name": "Olé",
+        "url": "https://www.ole.com.ar",
+        "feed_url": null,
+        "language": "es",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Grootste Argentijnse sportkrant. Feed-URL niet gevonden in zoekopdrachten. Scraping waarschijnlijk nodig."
+      },
+      {
+        "name": "TyC Sports",
+        "url": "https://www.tycsports.com",
+        "feed_url": null,
+        "language": "es",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Argentijnse sportzender. Geen RSS gevonden."
+      },
+      {
+        "name": "Globo Esporte",
+        "url": "https://ge.globo.com",
+        "feed_url": null,
+        "language": "pt-BR",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Grootste Braziliaanse sportsite. Originele ge.globo.com feed-URL niet bevestigd."
+      },
+      {
+        "name": "Gazeta Esportiva",
+        "url": "https://www.gazetaesportiva.com",
+        "feed_url": "https://www.gazetaesportiva.com/feedrss/",
+        "language": "pt-BR",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "RSS-pagina gevonden."
+      },
+      {
+        "name": "Lance!",
+        "url": "https://www.lance.com.br",
+        "feed_url": null,
+        "language": "pt-BR",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feed-URL moet onderzocht."
+      },
+      {
+        "name": "FutbolRed (Colombia)",
+        "url": "https://www.futbolred.com",
+        "feed_url": "https://www.futbolred.com/rss",
+        "language": "es",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Colombiaans. RSS-pagina met meerdere feeds gevonden."
+      }
+    ],
+    "rusland": [
+      {
+        "name": "Sport Express",
+        "url": "https://www.sport-express.ru",
+        "feed_url": "https://www.sport-express.ru/services/materials/news/se/football/rss/",
+        "language": "ru",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "RSS-pagina gevonden op /company/rss/. Feedspot bevestigt feed op /services/ma... (afgekapt). Voetbal-specifieke feed waarschijnlijk op /services/materials/news/se/football/rss/"
+      },
+      {
+        "name": "Championat",
+        "url": "https://www.championat.com",
+        "feed_url": null,
+        "language": "ru",
+        "tier": 2,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Derde grootste Russische sportsite. Feed-URL moet onderzocht."
+      },
+      {
+        "name": "Sports.ru",
+        "url": "https://www.sports.ru",
+        "feed_url": "https://www.sports.ru/docs/rss/",
+        "language": "ru",
+        "tier": 2,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "RSS-documentatiepagina gevonden. Tweede grootste Russische sportsite."
+      }
+    ],
+    "azie": [
+      {
+        "name": "Japan Times Soccer",
+        "url": "https://www.japantimes.co.jp/sports/soccer/",
+        "feed_url": null,
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Engelstalig. Feed-URL moet onderzocht."
+      },
+      {
+        "name": "Yonhap News Sports (Korea)",
+        "url": "https://en.yna.co.kr/sports/index",
+        "feed_url": "https://en.yna.co.kr/RSS/sports.xml",
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Zuid-Koreaans persbureau, Engelstalige editie. Gevonden via Feedspot."
+      }
+    ],
+    "afrika": [
+      {
+        "name": "KickOff",
+        "url": "https://www.kickoff.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Zuid-Afrikaans. Feed-URL moet onderzocht."
+      },
+      {
+        "name": "AfricanFootball.com",
+        "url": "https://www.africanfootball.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Feed-URL moet onderzocht."
+      },
+      {
+        "name": "Foot Africa",
+        "url": "https://www.foot-africa.com",
+        "feed_url": null,
+        "language": "fr",
+        "tier": 3,
+        "fetch_method": "scrape",
+        "status": "unknown",
+        "notes": "Franstalig. Feed-URL moet onderzocht."
+      }
+    ],
+    "data_apis": [
+      {
+        "name": "API-Football",
+        "url": "https://www.api-football.com",
+        "feed_url": null,
+        "language": "en",
+        "tier": null,
+        "fetch_method": "api",
+        "status": "verified",
+        "notes": "Betaalde API. Transfers endpoint, live scores, squad data."
+      },
+      {
+        "name": "Transfermarkt Datasets",
+        "url": "https://github.com/dcaribou/transfermarkt-datasets",
+        "feed_url": null,
+        "language": "en",
+        "tier": null,
+        "fetch_method": "api",
+        "status": "verified",
+        "notes": "Gratis. Wekelijks bijgewerkt. DuckDB-querybaar. Speler-, club-, transferdata."
+      },
+      {
+        "name": "Reddit r/AjaxAmsterdam",
+        "url": "https://www.reddit.com/r/AjaxAmsterdam/",
+        "feed_url": "https://www.reddit.com/r/AjaxAmsterdam/.rss?format=xml",
+        "language": "en",
+        "tier": 3,
+        "fetch_method": "rss",
+        "status": "found",
+        "notes": "Reddit biedt standaard RSS per subreddit."
+      }
+    ]
+  }
+}
