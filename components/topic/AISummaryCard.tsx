@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/Card";
-import type { TopicSummaryLine } from "@/lib/mock/topics";
+import type { TopicSummaryLine } from "@/lib/types/feed";
 
 export function AISummaryCard({ lines }: { lines: TopicSummaryLine[] }) {
   return (

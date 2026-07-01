@@ -1,4 +1,4 @@
-import type { TopicComment } from "@/lib/mock/topics";
+import type { TopicComment } from "@/lib/types/feed";
 
 export function CommentList({ comments }: { comments: TopicComment[] }) {
   return (

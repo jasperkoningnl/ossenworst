@@ -1,0 +1,15 @@
+name: Pipeline tick
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger pipeline tick
+        run: |
+          curl -sf -X POST "${{ vars.APP_URL }}/api/cron/tick" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
