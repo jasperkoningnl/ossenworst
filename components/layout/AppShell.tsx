@@ -2,21 +2,16 @@ import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
 
 /**
- * Mobile-first scherm-wrapper: gecentreerde smalle kolom (max-w-md), sticky
- * header, ruimte onderaan voor de vaste BottomNav. Bewust dun gehouden zodat
- * het definitieve Claude Design-bestand de visuele afwerking kan aansturen.
+ * Mobile-first scherm-wrapper: gecentreerde smalle kolom (max-w-md), vaste
+ * header + bottom-nav uit het design. De telefoon-bezel/statusbalk uit de
+ * Claude Design-preview wordt bewust niet nagebouwd — de echte mobiele
+ * browser levert die al.
  */
-export function AppShell({
-  children,
-  title = "",
-}: {
-  children: React.ReactNode;
-  title?: string;
-}) {
+export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
-      <Header title={title} />
-      <main className="flex-1 pb-16">{children}</main>
+    <div className="mx-auto flex min-h-screen max-w-md flex-col" style={{ background: "var(--bg)" }}>
+      <Header />
+      <main className="flex-1 pb-[60px]">{children}</main>
       <BottomNav />
     </div>
   );
