@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+.osw-scroll::-webkit-scrollbar{width:0;height:0}
+.osw-scroll{scrollbar-width:none}
+@keyframes oswpulse{0%,100%{opacity:1}50%{opacity:.35}}
+</style>
+</helmet>
+
+<div style="width:384px;height:812px;border-radius:46px;background:var(--frame,#04060A);padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05) inset;position:relative;font-family:'Barlow Semi Condensed',system-ui,sans-serif;pointer-events:{{ pointer }};{{ themeVars }}">
+  <div style="width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--bg,#0A0D12);display:flex;flex-direction:column;position:relative">
+
+    <!-- status bar -->
+    <div style="height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:var(--bar,#05070B);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.04em;color:var(--fg2,#8A93A0)">
+      <span style="font-weight:600;color:var(--fgc,#C3CAD4)">21:47</span>
+      <span style="display:flex;gap:6px;align-items:center"><span style="color:var(--fg3,#5C6470)">4G</span><span style="letter-spacing:1px;color:var(--fgc,#C3CAD4)">●●●●</span><span style="color:#39B14E">84%</span></span>
+    </div>
+
+    <!-- app top bar -->
+    <div style="flex:none;background:var(--bar,#05070B)">
+      <div style="height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:31px;height:31px;border-radius:8px;background:#D2122E;padding:3px;box-shadow:0 0 0 1px rgba(255,255,255,.14) inset;flex:none">
+            <svg viewBox="0 0 40 40" style="width:100%;height:100%;display:block">
+              <circle cx="20" cy="20" r="13" fill="#FBF3E7"/>
+              <circle cx="20" cy="20" r="10.3" fill="#63160F"/>
+              <circle cx="16.3" cy="16.8" r="2" fill="#E9D9BC"/>
+              <circle cx="23.6" cy="21.6" r="2.4" fill="#E9D9BC"/>
+              <circle cx="18.4" cy="24.2" r="1.6" fill="#E9D9BC"/>
+              <circle cx="24.2" cy="15.4" r="1.2" fill="#2A0A07"/>
+              <circle cx="20.6" cy="20.2" r="1.05" fill="#2A0A07"/>
+            </svg>
+          </div>
+          <div style="line-height:1">
+            <div style="font-weight:700;font-size:18px;letter-spacing:.01em;color:var(--fghi,#F4F5F2)">Ossenworst Manager</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fglabel,#7A8290)">
+          <span style="width:6px;height:6px;border-radius:50%;background:#D2122E;animation:oswpulse 1.8s infinite"></span>LIVE
+        </div>
+      </div>
+      <div style="height:2px;background:linear-gradient(90deg,#D2122E 0%,#D2122E 38%,#2C6FD6 38%,#2C6FD6 100%)"></div>
+    </div>
+
+    <!-- SCREEN BODY -->
+    <div class="osw-scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;position:relative;background:var(--bg,#0A0D12)">
+
+      <!-- ============ NIEUWS ============ -->
+      <sc-if value="{{ isNieuws }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--head,#0C1016);border-bottom:1px solid var(--bd,#1B2230)">
+          <span style="width:4px;height:16px;background:#D2122E"></span>
+          <span style="font-weight:700;font-size:17px;letter-spacing:.03em;color:var(--fghi,#F2F3EF)">NIEUWS</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg3,#5C6470)">10 BERICHTEN · 29 JUN</span>
+        </div>
+        <!-- filter tabs -->
+        <div class="osw-scroll" style="display:flex;gap:5px;overflow-x:auto;padding:10px 14px 11px;background:var(--head,#0C1016);border-bottom:1px solid var(--bdsoft,#161C26)">
+          <sc-for list="{{ filters }}" as="f" hint-placeholder-count="7">
+            <button onClick="{{ f.onClick }}" style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.03em;padding:5px 9px;border-radius:3px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.fg }};cursor:pointer">{{ f.label }}</button>
+          </sc-for>
+        </div>
+        <!-- feed -->
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ feed }}" as="it" hint-placeholder-count="6">
+            <button onClick="{{ it.onClick }}" style="font-family:'Barlow Semi Condensed',system-ui,sans-serif;text-align:left;display:flex;gap:0;background:{{ it.rowBg }};border:none;border-bottom:1px solid var(--hair2,#14191F);cursor:pointer;padding:0;width:100%">
+              <div style="width:4px;flex:none;background:{{ it.spine }}"></div>
+              <div style="flex:1;min-width:0">
+                <sc-if value="{{ it.hero }}" hint-placeholder-val="{{ false }}">
+                <div style="position:relative;height:150px;background:repeating-linear-gradient(135deg,var(--track,#1A212C),var(--track,#1A212C) 9px,var(--stripeB,#141A23) 9px,var(--stripeB,#141A23) 18px);border-bottom:1px solid var(--hair,#12171D);display:flex;align-items:center;justify-content:center">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.7">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--fg3,#5C6470)" stroke-width="1.6"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.4"/><path d="M8 6l1.4-2h5.2L16 6"/></svg>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.14em;color:var(--fg3,#5C6470)">SLEEP OPENINGSFOTO</span>
+                  </div>
+                  <span style="position:absolute;left:9px;top:8px;font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:2px;background:#D2122E;color:#fff">FOTO</span>
+                  <span style="position:absolute;right:9px;bottom:7px;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.03em;color:var(--fg3,#566070);background:var(--bg,#0A0D12);padding:1px 5px;border-radius:2px">{{ it.credit }}</span>
+                </div>
+                </sc-if>
+                <div style="padding:10px 13px 11px">
+                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.05em;padding:2.5px 6px;border-radius:2px;background:{{ it.spine }};color:{{ it.catText }}">{{ it.cat }}</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;letter-spacing:.04em;color:{{ it.tierC }}"><span style="width:5px;height:5px;border-radius:50%;background:{{ it.tierC }}"></span>{{ it.tierL }}</span>
+                    <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg5,#4E5663);white-space:nowrap">{{ it.t }}</span>
+                  </div>
+                  <div style="display:flex;gap:11px;align-items:flex-start">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;font-size:16px;line-height:1.12;color:var(--fg,#ECECE4);margin-bottom:3px;text-wrap:pretty">{{ it.h }}</div>
+                      <div style="font-size:12.5px;line-height:1.28;color:var(--fg2,#828B98);margin-bottom:8px;text-wrap:pretty">{{ it.s }}</div>
+                    </div>
+                    <sc-if value="{{ it.thumb }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:62px;height:62px;flex:none;border-radius:5px;border:1px solid var(--bd2,#232B38);background:repeating-linear-gradient(135deg,var(--track,#1A212C),var(--track,#1A212C) 5px,var(--stripeB,#141A23) 5px,var(--stripeB,#141A23) 10px);position:relative;overflow:hidden">
+                      <span style="position:absolute;left:4px;top:3px;font-family:'IBM Plex Mono',monospace;font-size:6px;font-weight:700;letter-spacing:.06em;color:var(--fg3,#5C6470)">FOTO</span>
+                    </div>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg3,#566070)">
+                    <span>▣ {{ it.src }}</span>
+                    <span>↳ {{ it.re }}</span>
+                    <sc-if value="{{ it.trend }}" hint-placeholder-val="{{ true }}"><span style="margin-left:auto;font-weight:700;letter-spacing:.03em;color:{{ it.trendC }}">{{ it.trend }}</span></sc-if>
+                    <sc-if value="{{ it.openHint }}" hint-placeholder-val="{{ false }}"><span style="font-weight:700;letter-spacing:.04em;color:#E8485F">▸ TIJDLIJN</span></sc-if>
+                  </div>
+                </div>
+              </div>
+            </button>
+          </sc-for>
+          <div style="padding:15px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg6,#3C434E)">— EINDE FEED —</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ TEAM ============ -->
+      <sc-if value="{{ isTeam }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--head,#0C1016);border-bottom:1px solid var(--bd,#1B2230)">
+          <span style="width:4px;height:16px;background:#D2122E"></span><span style="font-weight:700;font-size:17px;letter-spacing:.03em;color:var(--fghi,#F2F3EF)">TEAM</span>
+        </div>
+        <div style="display:flex;gap:5px;padding:11px 14px;background:var(--head,#0C1016);border-bottom:1px solid var(--bdsoft,#161C26)">
+          <button onClick="{{ teamEersteClick }}" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.03em;padding:7px;border-radius:3px;border:1px solid {{ teamEersteBorder }};background:{{ teamEersteBg }};color:{{ teamEersteFg }};cursor:pointer">EERSTE ELFTAL</button>
+          <button onClick="{{ teamJongClick }}" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.03em;padding:7px;border-radius:3px;border:1px solid {{ teamJongBorder }};background:{{ teamJongBg }};color:{{ teamJongFg }};cursor:pointer">JONG AJAX</button>
+        </div>
+        <div style="display:flex;align-items:center;padding:6px 13px;background:var(--bar,#05070B);border-bottom:1px solid var(--bd,#1B2230);font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.07em;color:var(--fg3,#566070)">
+          <span style="width:22px">#</span><span style="flex:1">SPELER</span><span style="width:26px;text-align:center">POS</span><span style="width:28px;text-align:center">LFT</span><span style="width:40px;text-align:right">CONTR.</span><span style="width:48px;text-align:right">WAARDE</span>
+        </div>
+        <sc-for list="{{ squad }}" as="p" hint-placeholder-count="11">
+          <div style="display:flex;align-items:center;padding:7px 13px;border-bottom:1px solid var(--hair,#12171D);background:{{ p.rowBg }}">
+            <span style="width:22px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#D2122E">{{ p.n }}</span>
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px">
+              <div style="width:23px;height:23px;flex:none;border-radius:4px;background:repeating-linear-gradient(135deg,var(--track,#1A212C),var(--track,#1A212C) 3px,var(--stripeB,#141A23) 3px,var(--stripeB,#141A23) 6px);border:1px solid var(--bd2,#232B38)"></div>
+              <div style="min-width:0">
+                <div style="font-size:14px;font-weight:600;color:var(--fgstrong,#E4E8EE);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.05em;color:var(--fg3,#566070)">{{ p.nat }}</div>
+              </div>
+            </div>
+            <span style="width:26px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:{{ p.posC }}">{{ p.pos }}</span>
+            <span style="width:28px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fgm,#99A2AE)">{{ p.age }}</span>
+            <span style="width:40px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ p.cC }}">'{{ p.cShort }}</span>
+            <span style="width:48px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--fgc,#C3CAD4)">{{ p.v }}</span>
+          </div>
+        </sc-for>
+        <div style="padding:12px 14px;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg3,#566070)"><span>SELECTIEWAARDE</span><span style="color:var(--fgc,#C3CAD4);font-weight:700">{{ squadValue }}</span></div>
+      </div>
+      </sc-if>
+
+      <!-- ============ TACTIEK ============ -->
+      <sc-if value="{{ isTactiek }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--head,#0C1016);border-bottom:1px solid var(--bd,#1B2230)">
+          <span style="width:4px;height:16px;background:#D2122E"></span><span style="font-weight:700;font-size:17px;letter-spacing:.03em;color:var(--fghi,#F2F3EF)">TACTIEK</span>
+        </div>
+        <div style="display:flex;gap:5px;padding:11px 14px 9px">
+          <button onClick="{{ tacJouwClick }}" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;padding:7px;border-radius:3px;border:1px solid {{ tacJouwBorder }};background:{{ tacJouwBg }};color:{{ tacJouwFg }};cursor:pointer">JOUW OPSTELLING</button>
+          <button onClick="{{ tacAllClick }}" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;padding:7px;border-radius:3px;border:1px solid {{ tacAllBorder }};background:{{ tacAllBg }};color:{{ tacAllFg }};cursor:pointer">ALL-TIME XI</button>
+        </div>
+        <div style="display:flex;gap:5px;padding:0 14px 10px">
+          <sc-for list="{{ formations }}" as="fm" hint-placeholder-count="3">
+            <button onClick="{{ fm.onClick }}" style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;padding:5px 11px;border-radius:3px;border:1px solid {{ fm.border }};background:{{ fm.bg }};color:{{ fm.fg }};cursor:pointer">{{ fm.label }}</button>
+          </sc-for>
+        </div>
+        <div style="margin:0 14px 12px;border-radius:6px;overflow:hidden;position:relative;height:300px;background:linear-gradient(#16331F,#102619);border:1px solid #214029">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(#ffffff00,#ffffff00 29px,#ffffff09 29px,#ffffff09 30px)"></div>
+          <div style="position:absolute;left:8px;right:8px;top:8px;bottom:8px;border:1.5px solid #ffffff2e;border-radius:3px"></div>
+          <div style="position:absolute;left:50%;top:8px;bottom:8px;width:1.5px;background:#ffffff2e;transform:translateX(-50%)"></div>
+          <div style="position:absolute;left:50%;top:50%;width:60px;height:60px;border:1.5px solid #ffffff2e;border-radius:50%;transform:translate(-50%,-50%)"></div>
+          <sc-for list="{{ pitch }}" as="pp" hint-placeholder-count="11">
+            <div style="position:absolute;left:{{ pp.x }}%;top:{{ pp.y }}%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;width:60px">
+              <div style="width:30px;height:30px;border-radius:50%;background:#D2122E;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.5)">{{ pp.num }}</div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;color:#fff;background:#000000aa;padding:1px 4px;border-radius:3px;white-space:nowrap">{{ pp.name }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:700;color:#F2C94C">{{ pp.pct }}%</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:0 14px 12px">
+          <button style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:.06em;padding:11px;border-radius:5px;border:none;background:#D2122E;color:#fff;cursor:pointer">STUUR IN ▸</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--head,#0C1016);border-top:1px solid var(--bd,#1B2230);border-bottom:1px solid var(--bdsoft,#161C26)"><span style="width:3px;height:12px;background:#2C6FD6"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.05em;color:var(--fglabel,#7A8290)">WAT DE LEZERS KIEZEN</span></div>
+        <sc-for list="{{ consensus }}" as="c" hint-placeholder-count="5">
+          <div style="padding:7px 14px;border-bottom:1px solid var(--hair,#12171D)">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg2,#828B98)">{{ c.pos }}</span><span style="font-size:13px;color:var(--fgstrong,#E4E8EE);font-weight:600">{{ c.player }} · {{ c.pct }}%</span></div>
+            <div style="height:5px;border-radius:3px;background:var(--track,#1A212C);overflow:hidden"><div style="height:100%;width:{{ c.pct }}%;background:#F2C94C"></div></div>
+          </div>
+        </sc-for>
+        <div style="height:10px"></div>
+      </div>
+      </sc-if>
+
+      <!-- ============ TRANSFERS ============ -->
+      <sc-if value="{{ isTransfers }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--head,#0C1016);border-bottom:1px solid var(--bd,#1B2230)">
+          <span style="width:4px;height:16px;background:#D2122E"></span><span style="font-weight:700;font-size:17px;letter-spacing:.03em;color:var(--fghi,#F2F3EF)">TRANSFERS</span>
+        </div>
+        <div style="display:flex;gap:5px;padding:11px 14px;background:var(--head,#0C1016);border-bottom:1px solid var(--bdsoft,#161C26)">
+          <button onClick="{{ trfListClick }}" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;padding:7px;border-radius:3px;border:1px solid {{ trfListBorder }};background:{{ trfListBg }};color:{{ trfListFg }};cursor:pointer">TRANSFERLIJST</button>
+          <button onClick="{{ trfWishClick }}" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;padding:7px;border-radius:3px;border:1px solid {{ trfWishBorder }};background:{{ trfWishBg }};color:{{ trfWishFg }};cursor:pointer">VERLANGLIJST</button>
+        </div>
+
+        <sc-if value="{{ isTrfList }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="margin:11px 14px;padding:11px 12px;border-radius:6px;background:var(--card,#10151D);border:1px solid var(--bd,#1B2230)">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.03em;color:var(--fg3,#566070);margin-bottom:9px">KIES MAX. 3 SPELERS DIE WEG MOETEN</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:4px;background:var(--bg,#0A0D12);border:1px solid var(--bd2,#232B38)">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:#D2122E">2</span><span style="font-size:14px;color:var(--fgstrong,#E4E8EE)">Anton Gaaei</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg3,#566070)">×</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:4px;background:var(--bg,#0A0D12);border:1px solid var(--bd2,#232B38)">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:#D2122E">7</span><span style="font-size:14px;color:var(--fgstrong,#E4E8EE)">Steven Berghuis</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg3,#566070)">×</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:4px;background:var(--bg,#0A0D12);border:1px dashed var(--bddash,#2A3340);color:var(--fg5,#4E5663);font-size:13px">+ Voeg speler toe</div>
+            </div>
+            <button style="width:100%;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.05em;padding:10px;border-radius:5px;border:none;background:#D2122E;color:#fff;cursor:pointer">STUUR IN ▸</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--head,#0C1016);border-top:1px solid var(--bd,#1B2230);border-bottom:1px solid var(--bdsoft,#161C26)"><span style="width:3px;height:12px;background:#2C6FD6"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.05em;color:var(--fglabel,#7A8290)">MEEST WEGGESTEMD</span></div>
+          <sc-for list="{{ transferRank }}" as="r" hint-placeholder-count="6">
+            <div style="padding:7px 14px;border-bottom:1px solid var(--hair,#12171D)">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span style="font-size:14px;color:var(--fgstrong,#E4E8EE)">{{ r.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#D2122E;font-weight:700">{{ r.pct }}%</span></div>
+              <div style="height:5px;border-radius:3px;background:var(--track,#1A212C);overflow:hidden"><div style="height:100%;width:{{ r.pct }}%;background:#D2122E"></div></div>
+            </div>
+          </sc-for>
+          <div style="height:10px"></div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isTrfWish }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="margin:11px 14px">
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:5px;background:var(--bg,#0A0D12);border:1px solid var(--bd2,#232B38);margin-bottom:10px">
+              <span style="color:var(--fg3,#566070);font-family:'IBM Plex Mono',monospace;font-size:12px">⌕</span><span style="font-size:13px;color:var(--fg3,#566070)">Zoek een speler…</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.03em;color:var(--fg3,#566070);margin-bottom:8px">JOUW VERLANGLIJST · 2 / 3</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:4px;background:var(--card,#10151D);border:1px solid var(--bd2,#232B38)">
+                <div style="width:22px;height:22px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--track,#1A212C),var(--track,#1A212C) 3px,var(--stripeB,#141A23) 3px,var(--stripeB,#141A23) 6px)"></div>
+                <div><div style="font-size:14px;color:var(--fgstrong,#E4E8EE);line-height:1.05">Marc-André ter Stegen</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg3,#566070);margin-top:1px">BARCELONA · D · 34</div></div>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fgc,#C3CAD4)">€10M</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:4px;background:var(--card,#10151D);border:1px solid var(--bd2,#232B38)">
+                <div style="width:22px;height:22px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--track,#1A212C),var(--track,#1A212C) 3px,var(--stripeB,#141A23) 3px,var(--stripeB,#141A23) 6px)"></div>
+                <div><div style="font-size:14px;color:var(--fgstrong,#E4E8EE);line-height:1.05">Dani Ceballos</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg3,#566070);margin-top:1px">REAL MADRID · M · 29</div></div>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fgc,#C3CAD4)">€15M</span>
+              </div>
+            </div>
+            <button style="width:100%;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.05em;padding:10px;border-radius:5px;border:none;background:#D2122E;color:#fff;cursor:pointer">STUUR IN ▸</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--head,#0C1016);border-top:1px solid var(--bd,#1B2230);border-bottom:1px solid var(--bdsoft,#161C26)"><span style="width:3px;height:12px;background:#2C6FD6"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.05em;color:var(--fglabel,#7A8290)">MEEST GEWENSTE AANWINST</span></div>
+          <sc-for list="{{ wishRank }}" as="w" hint-placeholder-count="6">
+            <div style="padding:7px 14px;border-bottom:1px solid var(--hair,#12171D)">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span style="font-size:14px;color:var(--fgstrong,#E4E8EE)">{{ w.name }} <span style="font-family:'IBM Plex Mono',monospace;color:var(--fg3,#566070);font-size:8px">{{ w.club }}</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#F2C94C;font-weight:700">{{ w.pct }}%</span></div>
+              <div style="height:5px;border-radius:3px;background:var(--track,#1A212C);overflow:hidden"><div style="height:100%;width:{{ w.pct }}%;background:#F2C94C"></div></div>
+            </div>
+          </sc-for>
+          <div style="height:10px"></div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ============ PROFIEL ============ -->
+      <sc-if value="{{ isProfiel }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;padding:10px 14px;background:var(--head,#0C1016);border-bottom:1px solid var(--bd,#1B2230)">
+          <span style="width:4px;height:16px;background:#D2122E"></span><span style="font-weight:700;font-size:17px;letter-spacing:.03em;color:var(--fghi,#F2F3EF)">PROFIEL</span>
+        </div>
+        <div style="padding:14px">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:7px;background:var(--card,#10151D);border:1px solid var(--bdcard,#20283A);margin-bottom:16px">
+            <div style="width:46px;height:46px;border-radius:7px;background:#D2122E;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:18px;color:#fff">?</div>
+            <div><div style="font-weight:600;font-size:16px;color:var(--fg,#ECECE4);line-height:1.1">Anonieme manager</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg3,#566070);margin-top:2px">GEEN ACCOUNT · STEMMEN TELLEN MEE</div></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.04em;color:var(--fg3,#566070);margin-bottom:8px">MAAK EEN GEBRUIKERSNAAM</div>
+          <div style="display:flex;gap:7px;margin-bottom:7px">
+            <div style="flex:1;padding:11px 12px;border-radius:5px;background:var(--bg,#0A0D12);border:1px solid var(--bd2,#232B38);font-size:13px;color:var(--fg3,#566070)">bijv. Mister_Ajax</div>
+            <button style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;padding:0 16px;border-radius:5px;border:none;background:#D2122E;color:#fff;cursor:pointer">CLAIM</button>
+          </div>
+          <div style="font-size:12px;color:var(--fg3,#566070);margin-bottom:18px">Geen e-mail nodig. Zo laagdrempelig mogelijk.</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.04em;color:var(--fg3,#566070);margin-bottom:8px">JOUW INZENDINGEN</div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;padding:13px 11px;border-radius:6px;background:var(--card,#10151D);border:1px solid var(--bdcard,#20283A);text-align:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--fg,#ECECE4)">1</div><div style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.03em;color:var(--fg3,#566070);margin-top:3px">OPSTELLING</div></div>
+            <div style="flex:1;padding:13px 11px;border-radius:6px;background:var(--card,#10151D);border:1px solid var(--bdcard,#20283A);text-align:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--fg,#ECECE4)">3</div><div style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.03em;color:var(--fg3,#566070);margin-top:3px">TRANSFERLIJST</div></div>
+            <div style="flex:1;padding:13px 11px;border-radius:6px;background:var(--card,#10151D);border:1px solid var(--bdcard,#20283A);text-align:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:var(--fg,#ECECE4)">2</div><div style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.03em;color:var(--fg3,#566070);margin-top:3px">VERLANGLIJST</div></div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ ARTICLE OVERLAY ============ -->
+      <sc-if value="{{ articleOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:var(--bg,#0A0D12);overflow-y:auto;z-index:5" class="osw-scroll">
+        <div style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--bar,#05070B);border-bottom:1px solid var(--bd,#1B2230)">
+          <button onClick="{{ closeArticle }}" style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:var(--fgc,#C3CAD4);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:5px">‹ TERUG</button>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.05em;padding:2.5px 6px;border-radius:2px;background:#D2122E;color:#fff">TRANSFER</span>
+        </div>
+        <div style="padding:15px 15px 0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.04em;color:#E0A416"><span style="width:6px;height:6px;border-radius:50%;background:#E0A416"></span>GERUCHT</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:#E0A416">↑ STIJGEND</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg3,#566070)">6 BRONNEN</span>
+          </div>
+          <h1 style="font-weight:700;font-size:27px;line-height:1.02;color:var(--fghi,#F2F3EF);margin:0 0 7px;text-wrap:pretty">Ter Stegen dichterbij: Ajax voert gesprekken</h1>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg3,#566070);margin-bottom:14px">BIJGEWERKT 29 JUN 18:42 · SAGA LOOPT SINDS 12 JUN</div>
+
+          <div style="margin-bottom:18px">
+            <div style="position:relative;height:190px;border-radius:8px;overflow:hidden;border:1px solid var(--bdcard,#20283A);background:repeating-linear-gradient(135deg,var(--track,#1A212C),var(--track,#1A212C) 10px,var(--stripeB,#141A23) 10px,var(--stripeB,#141A23) 20px);display:flex;align-items:center;justify-content:center">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:7px;opacity:.7">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--fg3,#5C6470)" stroke-width="1.5"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.6"/><path d="M8 6l1.4-2h5.2L16 6"/></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.16em;color:var(--fg3,#5C6470)">SLEEP ARTIKELFOTO</span>
+              </div>
+              <span style="position:absolute;left:10px;top:9px;font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.08em;padding:2.5px 7px;border-radius:2px;background:#D2122E;color:#fff">FOTO</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:6px 2px 0;font-family:'IBM Plex Mono',monospace;font-size:8px;line-height:1.4">
+              <span style="color:var(--fg2,#828B98)">{{ articleCaption }}</span>
+              <span style="color:var(--fg3,#566070);white-space:nowrap">{{ articleCredit }}</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom:18px">
+            <div style="display:flex;gap:3px;margin-bottom:6px">
+              <sc-for list="{{ meter }}" as="m" hint-placeholder-count="4">
+                <div style="flex:1;height:6px;border-radius:2px;background:{{ m.bg }}"></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:.02em;color:var(--fg5,#4E5663)">
+              <span>PRAAT</span><span>GERUCHT</span><span style="color:#E0A416;font-weight:700">▲ MEERDERE BRONNEN</span><span>BEVESTIGD</span>
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--bdcard,#20283A);border-radius:7px;background:var(--card,#10151D);overflow:hidden;margin-bottom:20px">
+            <div style="display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--bd,#1B2230);background:var(--cardhd,#0B0F16)">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;color:#E8485F">◈ AI-SAMENVATTING</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg3,#566070)">6 bronnen samengevat</span>
+            </div>
+            <div style="padding:12px 13px;display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ summary }}" as="su" hint-placeholder-count="3">
+                <div style="font-size:13.5px;line-height:1.38;color:var(--fgbody,#AEB6C2);text-wrap:pretty"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--fgstrong,#E4E8EE)">{{ su.src }}</span> {{ su.text }}</div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px"><span style="width:3px;height:13px;background:#2C6FD6"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--fglabel,#7A8290)">TIJDLIJN VAN HET GERUCHT</span></div>
+          <div style="position:relative;padding-left:22px;margin-bottom:22px">
+            <div style="position:absolute;left:5px;top:4px;bottom:8px;width:2px;background:linear-gradient(var(--fglabel,#7A8290),#E0A416)"></div>
+            <sc-for list="{{ timeline }}" as="tl" hint-placeholder-count="5">
+              <div style="position:relative;margin-bottom:15px">
+                <div style="position:absolute;left:-22px;top:1px;width:12px;height:12px;border-radius:50%;background:{{ tl.dotBg }};border:2px solid var(--bg,#0A0D12);box-shadow:0 0 0 2px {{ tl.dotC }}"></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:700;color:{{ tl.dotC }}">{{ tl.d }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg3,#566070)">{{ tl.delta }}</span>
+                </div>
+                <div style="font-size:15px;font-weight:600;color:var(--fgstrong,#E4E8EE);line-height:1.1;margin-bottom:2px;text-wrap:pretty">{{ tl.h }}</div>
+                <div style="font-size:12.5px;line-height:1.32;color:var(--fg2,#828B98);text-wrap:pretty">{{ tl.s }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px"><span style="width:3px;height:13px;background:#2C6FD6"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--fglabel,#7A8290)">BRONNEN ({{ sourceCount }})</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:22px">
+            <sc-for list="{{ sources }}" as="so" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:5px;background:var(--card,#10151D);border:1px solid var(--bd,#1B2230)">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:2px;background:{{ so.tierBg }};color:{{ so.tierFg }}">TIER {{ so.tier }}</span>
+                <span style="font-size:14px;color:var(--fgstrong,#E4E8EE);font-weight:600">{{ so.n }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg3,#566070)">{{ so.d }}</span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#2C6FD6">↗</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px"><span style="width:3px;height:13px;background:#2C6FD6"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--fglabel,#7A8290)">REACTIES ({{ commentCount }})</span></div>
+          <div style="display:flex;flex-direction:column;gap:9px;padding-bottom:24px">
+            <sc-for list="{{ comments }}" as="cm" hint-placeholder-count="4">
+              <div style="padding:10px 12px;border-radius:6px;background:var(--surfa,#0E131A);border:1px solid var(--bdsoft,#161C26)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:{{ cm.uC }}">{{ cm.u }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg5,#4E5663)">{{ cm.t }}</span>
+                  <span style="margin-left:auto;display:flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg3,#566070)">▲ {{ cm.v }}</span>
+                </div>
+                <div style="font-size:13px;line-height:1.34;color:var(--fgbody,#AEB6C2);text-wrap:pretty">{{ cm.txt }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div style="height:60px;flex:none;display:flex;background:var(--bar,#05070B);border-top:1px solid var(--bd,#1B2230)">
+      <button onClick="{{ navNieuws }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:{{ ncNieuws }};border-top:2px solid {{ ntNieuws }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="7" y1="9" x2="13" y2="9"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="7" y1="16.5" x2="17" y2="16.5"/></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;letter-spacing:.02em">NIEUWS</span>
+      </button>
+      <button onClick="{{ navTeam }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:{{ ncTeam }};border-top:2px solid {{ ntTeam }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 4 6 6.5 4 8.5 6 11v9h12v-9l2-2.5L18 4l-3 1.5C14 6.5 10 6.5 9 4Z"/></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;letter-spacing:.02em">TEAM</span>
+      </button>
+      <button onClick="{{ navTactiek }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:{{ ncTactiek }};border-top:2px solid {{ ntTactiek }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="12" x2="21" y2="12"/><circle cx="12" cy="12" r="3"/></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;letter-spacing:.02em">TACTIEK</span>
+      </button>
+      <button onClick="{{ navTransfers }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:{{ ncTransfers }};border-top:2px solid {{ ntTransfers }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h11l-3-3"/><path d="M18 16H7l3 3"/></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;letter-spacing:.02em">TRANSFERS</span>
+      </button>
+      <button onClick="{{ navProfiel }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:{{ ncProfiel }};border-top:2px solid {{ ntProfiel }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.2-5.5 7-5.5s7 1.9 7 5.5"/></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;letter-spacing:.02em">PROFIEL</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;406px&quot;,&quot;height&quot;:&quot;834px&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;nieuws&quot;,&quot;team&quot;,&quot;tactiek&quot;,&quot;transfers&quot;,&quot;profiel&quot;],&quot;default&quot;:&quot;nieuws&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;interactive&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;openArticle&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = {
+    view: this.props.screen || 'nieuws',
+    articleOpen: !!this.props.openArticle,
+    filter: 'Alles',
+    teamTab: 'eerste',
+    tacticTab: 'jouw',
+    formation: '4-3-3',
+    transferTab: 'list'
+  };
+
+  cats = { 'TRANSFER':'#D2122E','STAF':'#9B6CF0','CLUB':'#C2C8D2','EREDIVISIE':'#27A6C4','EX-SPELER':'#E0A416','WEDSTRIJD':'#39B14E' };
+  tiers = { bevestigd:{l:'BEVESTIGD',c:'#39B14E'}, gerucht:{l:'GERUCHT',c:'#E0A416'}, praat:{l:'PRAATPROGRAMMA',c:'var(--fglabel,#7A8290)'} };
+
+  rawFeed = [
+    {id:'ts',cat:'TRANSFER',tier:'gerucht',h:'Ter Stegen dichterbij: Ajax voert gesprekken',s:'Spaanse media: transfervrije komst \u2018steeds waarschijnlijker\u2019.',t:'29 JUN 18:42',src:6,re:'1.324',trend:'\u2191 STIJGEND',trendC:'#E0A416',art:true,hero:true,credit:'\u00a9 BRONVERMELDING'},
+    {id:'caio',cat:'TRANSFER',tier:'bevestigd',h:'Caio Henrique officieel rond',s:'Linksback komt transfervrij over; vandaag medische keuring.',t:'29 JUN 14:10',src:9,re:'402',trend:'BEVESTIGD',trendC:'#39B14E',art:false,thumb:true},
+    {id:'staf',cat:'STAF',tier:'bevestigd',h:'M\u00edchel presenteert opvallende technische staf',s:'Nieuwe hoofdtrainer stelt complete staf voor.',t:'26 JUN 18:44',src:4,re:'233',trend:'',trendC:'',art:false,thumb:true},
+    {id:'berg',cat:'CLUB',tier:'gerucht',h:'Berghuis-dilemma verdeelt de directie',s:'Aflopend contract verdeelt Cruijff en M\u00edchel.',t:'29 JUN 16:49',src:3,re:'188',trend:'',trendC:'',art:false},
+    {id:'blind',cat:'TRANSFER',tier:'praat',h:'\u2018Keert Daley Blind deze zomer terug?\u2019',s:'Danny Blind houdt een slag om de arm.',t:'29 JUN 18:08',src:1,re:'97',trend:'PRAATPROGRAMMA',trendC:'var(--fglabel,#7A8290)',art:false},
+    {id:'erediv',cat:'EREDIVISIE',tier:'bevestigd',h:'Geen midweekse speelrondes meer in 26/27',s:'Gewijzigd speelschema voor komend seizoen.',t:'28 JUN 11:20',src:5,re:'64',trend:'',trendC:'',art:false},
+    {id:'brob',cat:'EX-SPELER',tier:'bevestigd',h:'Brobbey smaakmaker bij Oranje op het WK',s:'Oud-Ajacied maakt indruk en oogst lof.',t:'28 JUN 22:30',src:7,re:'511',trend:'',trendC:'',art:false,thumb:true},
+    {id:'godts',cat:'TRANSFER',tier:'gerucht',h:'Arsenal aast op Mika Godts',s:'The Athletic meldt concrete interesse uit Londen.',t:'27 JUN 09:15',src:4,re:'276',trend:'\u2191 STIJGEND',trendC:'#E0A416',art:false,thumb:true},
+    {id:'ceb',cat:'TRANSFER',tier:'gerucht',h:'Ceballos-akkoord nabij; Galarza als alternatief',s:'Mundo Deportivo: akkoord met Real Madrid nabij.',t:'27 JUN 13:35',src:5,re:'342',trend:'',trendC:'',art:false},
+    {id:'oef',cat:'WEDSTRIJD',tier:'bevestigd',h:'Oefenprogramma bekend: Ajax opent in Oostenrijk',s:'Trainingskamp en twee oefenduels op het programma.',t:'25 JUN 21:33',src:5,re:'73',trend:'',trendC:'',art:false}
+  ];
+  filterMap = { 'Alles':null,'Transfers':'TRANSFER','Staf':'STAF','Club':'CLUB','Eredivisie':'EREDIVISIE','Ex-spelers':'EX-SPELER','Wedstrijden':'WEDSTRIJD' };
+
+  eerste = [
+    {n:22,name:'Remko Pasveer',pos:'D',nat:'NED',age:42,c:'26',v:'\u20ac0,3M',exp:true},
+    {n:1,name:'V\u00edt\u011bzslav Jaro\u0161',pos:'D',nat:'CZE',age:24,c:'26',v:'\u20ac4,0M',exp:true},
+    {n:2,name:'Anton Gaaei',pos:'V',nat:'DEN',age:23,c:'28',v:'\u20ac7,0M'},
+    {n:5,name:'Owen Wijndal',pos:'V',nat:'NED',age:26,c:'27',v:'\u20ac4,5M'},
+    {n:4,name:'Ko Itakura',pos:'V',nat:'JPN',age:29,c:'29',v:'\u20ac14M'},
+    {n:15,name:'Josip \u0160utalo',pos:'V',nat:'CRO',age:25,c:'28',v:'\u20ac18M'},
+    {n:31,name:'Youri Baas',pos:'V',nat:'NED',age:22,c:'28',v:'\u20ac9,0M'},
+    {n:6,name:'Sivert Mannsverk',pos:'M',nat:'NOR',age:23,c:'28',v:'\u20ac8,0M'},
+    {n:8,name:'Kenneth Taylor',pos:'M',nat:'NED',age:24,c:'27',v:'\u20ac22M'},
+    {n:20,name:'Branco v.d. Boomen',pos:'M',nat:'NED',age:30,c:'26',v:'\u20ac3,0M',exp:true},
+    {n:10,name:'Oscar Gloukh',pos:'M',nat:'ISR',age:22,c:'29',v:'\u20ac20M'},
+    {n:14,name:'Kian Fitz-Jim',pos:'M',nat:'NED',age:22,c:'27',v:'\u20ac6,0M'},
+    {n:21,name:'Davy Klaassen',pos:'M',nat:'NED',age:33,c:'26',v:'\u20ac2,0M',exp:true},
+    {n:7,name:'Steven Berghuis',pos:'A',nat:'NED',age:34,c:'26',v:'\u20ac2,5M',exp:true},
+    {n:11,name:'Mika Godts',pos:'A',nat:'BEL',age:20,c:'28',v:'\u20ac15M'},
+    {n:9,name:'Wout Weghorst',pos:'A',nat:'NED',age:33,c:'26',v:'\u20ac3,0M',exp:true},
+    {n:30,name:'Bertrand Traor\u00e9',pos:'A',nat:'BFA',age:30,c:'26',v:'\u20ac4,0M',exp:true},
+    {n:18,name:'Carlos Forbs',pos:'A',nat:'POR',age:21,c:'29',v:'\u20ac12M'}
+  ];
+  jong = [
+    {n:45,name:'Jaydon Banel',pos:'A',nat:'NED',age:20,c:'26',v:'\u20ac1,2M',exp:true},
+    {n:38,name:'Don-Angelo Konadu',pos:'A',nat:'NED',age:20,c:'27',v:'\u20ac0,8M'},
+    {n:51,name:'Rio den Haan',pos:'M',nat:'NED',age:19,c:'26',v:'\u20ac0,5M',exp:true},
+    {n:55,name:'Sean Steur',pos:'M',nat:'NED',age:19,c:'27',v:'\u20ac1,0M'},
+    {n:62,name:'Aaron Bouwman',pos:'V',nat:'NED',age:18,c:'27',v:'\u20ac0,6M'},
+    {n:48,name:'Tristan Gooijer',pos:'V',nat:'NED',age:20,c:'26',v:'\u20ac0,7M',exp:true}
+  ];
+  posColor = { 'D':'#E0A416','V':'#27A6C4','M':'#39B14E','A':'#D2122E' };
+
+  pitchData = [
+    {num:22,name:'Pasveer',pct:71,x:50,y:90},
+    {num:2,name:'Gaaei',pct:54,x:82,y:70},
+    {num:4,name:'Itakura',pct:63,x:62,y:74},
+    {num:15,name:'\u0160utalo',pct:70,x:38,y:74},
+    {num:5,name:'Wijndal',pct:58,x:18,y:70},
+    {num:8,name:'Taylor',pct:81,x:30,y:48},
+    {num:6,name:'Mannsverk',pct:66,x:50,y:54},
+    {num:10,name:'Gloukh',pct:74,x:70,y:48},
+    {num:18,name:'Forbs',pct:49,x:80,y:24},
+    {num:9,name:'Weghorst',pct:41,x:50,y:18},
+    {num:11,name:'Godts',pct:69,x:20,y:24}
+  ];
+  consensusData = [
+    {pos:'SPITS',player:'Weghorst',pct:41},
+    {pos:'SPELMAKER (10)',player:'Gloukh',pct:74},
+    {pos:'CONTROLEUR (6)',player:'Mannsverk',pct:66},
+    {pos:'LINKSBUITEN',player:'Godts',pct:69},
+    {pos:'DOEL',player:'Pasveer',pct:71}
+  ];
+  formationData = ['4-3-3','4-2-3-1','3-5-2'];
+
+  transferRankData = [
+    {name:'Anton Gaaei',pct:62},{name:'Owen Wijndal',pct:47},{name:'Steven Berghuis',pct:41},
+    {name:'Bertrand Traor\u00e9',pct:36},{name:'Branco v.d. Boomen',pct:31},{name:'Carlos Forbs',pct:19}
+  ];
+  wishRankData = [
+    {name:'M.-A. ter Stegen',club:'BARCELONA',pct:34},{name:'Dani Ceballos',club:'REAL MADRID',pct:21},
+    {name:'Caio Henrique',club:'MONACO',pct:12},{name:'Julian Brandt',club:'DORTMUND',pct:9},
+    {name:'Mat\u00edas Galarza',club:'FAMALIC\u00c3O',pct:7},{name:'Yann Sommer',club:'INTER',pct:5}
+  ];
+
+  summaryData = [
+    {src:'SPORT (ES)',text:'opende de jacht: een transfervrije komst van Ter Stegen is \u2018steeds waarschijnlijker\u2019 nu hij bij Barcelona uit beeld is.'},
+    {src:'DE TELEGRAAF',text:'meldt dat Jordi Cruijff een ervaren doelman boven aan zijn lijst heeft en dat er gesprekken lopen.'},
+    {src:'FABRIZIO ROMANO',text:'houdt een slag om de arm: er is contact, maar van een akkoord is nog geen sprake.'}
+  ];
+  meterData = [ {bg:'var(--fglabel,#7A8290)'},{bg:'#E0A416'},{bg:'#E0A416'},{bg:'var(--track,#1A212C)'} ];
+  timelineData = [
+    {d:'12 JUN',tier:'praat',h:'Eerste gerucht in praatprogramma',s:'Spaanse talkshow noemt Ajax terloops als optie.',delta:'1 bron'},
+    {d:'18 JUN',tier:'gerucht',h:'SPORT maakt het concreet',s:'\u2018Steeds waarschijnlijker\u2019 op de voorpagina.',delta:'+2 bronnen'},
+    {d:'23 JUN',tier:'gerucht',h:'Ajax zoekt nadrukkelijk een keeper',s:'Voetbalprimeur: Cruijff wil ervaren doelman.',delta:'+1 bron'},
+    {d:'27 JUN',tier:'gerucht',h:'Onderhandelingen op gang',s:'Meerdere bronnen melden dat Ajax inzet.',delta:'+2 bronnen'},
+    {d:'29 JUN',tier:'gerucht',h:'Vandaag: voorwaarden besproken',s:'Partijen naderen elkaar over salaris en duur.',delta:'6 bronnen'}
+  ];
+  sourcesData = [
+    {n:'Fabrizio Romano',d:'29 jun',tier:1},
+    {n:'De Telegraaf',d:'29 jun',tier:1},
+    {n:'ESPN',d:'28 jun',tier:2},
+    {n:'SPORT (ES)',d:'18 jun',tier:2},
+    {n:'Marca',d:'27 jun',tier:2},
+    {n:'Voetbalprimeur',d:'23 jun',tier:3}
+  ];
+  commentsData = [
+    {u:'JariL_10',t:'2u',txt:'Eindelijk weer een keeper van wereldklasse. Hier kunnen we op bouwen.',v:142},
+    {u:'anoniem',t:'3u',txt:'Transfervrij \u00e9n ervaren? Dit is de transfer van de zomer.',v:88},
+    {u:'DeMeer1996',t:'4u',txt:'Geloof het pas als Romano \u2018here we go\u2019 typt.',v:230},
+    {u:'WatskeburtAFC',t:'5u',txt:'Salaris wordt het probleem. Past dat binnen de begroting?',v:54}
+  ];
+
+  nav(v){ return () => this.setState({ view:v, articleOpen:false }); }
+  setFilter(f){ return () => this.setState({ filter:f }); }
+  openArt(it){ return () => { if(it.art) this.setState({ articleOpen:true }); }; }
+  tierBg(t){ return t===1 ? '#143620' : t===2 ? '#3A2E0C' : '#222831'; }
+  tierFg(t){ return t===1 ? '#39B14E' : t===2 ? '#E0A416' : 'var(--fg2,#8A93A0)'; }
+
+  renderVals(){
+    const v = this.state.view;
+    const accent = '#D2122E', dim = 'var(--fg3,#5C6470)';
+    const navColor = k => v===k && !this.state.articleOpen ? accent : dim;
+    const navTop = k => v===k && !this.state.articleOpen ? accent : 'transparent';
+    const themeVars = this.props.theme==='light'
+      ? '--bg:#FFFFFF;--bar:#FFFFFF;--head:#FDEEEC;--surfa:#FFFFFF;--surfb:#FCF4F3;--card:#FEF5F4;--cardhd:#FBEBE9;--chip:#FCEEEC;--frame:#E7D6D3;--bd:#F2DBD8;--bdsoft:#F7E7E5;--bd2:#ECD4D1;--hair:#F5E5E3;--hair2:#F5E5E3;--bdcard:#EDD5D2;--bddash:#E3C6C2;--track:#F0DAD7;--stripeB:#F8ECEA;--fg:#1B1416;--fghi:#0F090B;--fgstrong:#241D1F;--fgc:#463B3D;--fgbody:#4A3F41;--fgm:#6E6264;--fg2:#736567;--fglabel:#847678;--fg3:#8C7D7F;--fg5:#A99B9D;--fg6:#B9ABAD'
+      : '';
+
+    const feed = this.rawFeed
+      .filter(it => { const c = this.filterMap[this.state.filter]; return !c || it.cat===c; })
+      .map((it,i) => {
+        const ti = this.tiers[it.tier];
+        return { ...it, spine:this.cats[it.cat], catText: it.cat==='CLUB' ? '#0B0E13' : '#ffffff',
+          tierC:ti.c, tierL:ti.l, onClick:this.openArt(it), openHint: it.art,
+          rowBg: i%2===0 ? 'var(--surfa,#0E131A)' : 'var(--surfb,#0B0F15)' };
+      });
+
+    const filters = Object.keys(this.filterMap).map(label => {
+      const on = this.state.filter===label;
+      return { label, onClick:this.setFilter(label),
+        bg: on ? accent : 'var(--chip,#11161E)', fg: on ? '#fff' : 'var(--fg2,#828B98)', border: on ? accent : 'var(--bd2,#232B38)' };
+    });
+
+    const squadRaw = this.state.teamTab==='eerste' ? this.eerste : this.jong;
+    const squad = squadRaw.map((p,i) => ({ ...p, posC:this.posColor[p.pos], cShort:p.c, cC: p.exp ? '#D2122E' : 'var(--fg3,#566070)', rowBg: i%2===0 ? 'var(--surfa,#0E131A)' : 'var(--surfb,#0B0F15)' }));
+    const total = squadRaw.reduce((a,p)=> a + parseFloat(String(p.v).replace('\u20ac','').replace('M','').replace(',','.')), 0);
+    const squadValue = '\u20ac' + total.toFixed(0) + 'M';
+
+    const formations = this.formationData.map(label => {
+      const on = this.state.formation===label;
+      return { label, onClick:()=>this.setState({formation:label}),
+        bg:on?'var(--bd,#1B2230)':'var(--chip,#11161E)', fg:on?'var(--fg,#ECECE4)':'var(--fg3,#566070)', border:on?'#2C6FD6':'var(--bd2,#232B38)' };
+    });
+
+    const segBg = on => on?'var(--bd,#1B2230)':'var(--bg,#0A0D12)';
+    const segFg = on => on?'var(--fg,#ECECE4)':'var(--fg3,#566070)';
+    const segBd = on => on?accent:'var(--bd2,#232B38)';
+
+    const timeline = this.timelineData.map(tl => { const c=this.tiers[tl.tier].c; return { ...tl, dotC:c, dotBg:c }; });
+    const sources = this.sourcesData.map(so => ({ ...so, tierBg:this.tierBg(so.tier), tierFg:this.tierFg(so.tier) }));
+    const comments = this.commentsData.map(cm => ({ ...cm, uC: cm.u==='anoniem' ? 'var(--fglabel,#7A8290)' : '#C9A227' }));
+
+    return {
+      pointer: this.props.interactive===false ? 'none' : 'auto',
+      isNieuws: v==='nieuws', isTeam: v==='team', isTactiek: v==='tactiek',
+      isTransfers: v==='transfers', isProfiel: v==='profiel',
+      articleOpen: this.state.articleOpen,
+      themeVars,
+      articleCaption:'Ter Stegen in gesprek \u2014 archiefbeeld, niet van de recente onderhandelingen.',
+      articleCredit:'\u00a9 BRONVERMELDING / FOTOGRAAF',
+      filters, feed,
+      navNieuws:this.nav('nieuws'), navTeam:this.nav('team'), navTactiek:this.nav('tactiek'),
+      navTransfers:this.nav('transfers'), navProfiel:this.nav('profiel'),
+      ncNieuws:navColor('nieuws'), ncTeam:navColor('team'), ncTactiek:navColor('tactiek'),
+      ncTransfers:navColor('transfers'), ncProfiel:navColor('profiel'),
+      ntNieuws:navTop('nieuws'), ntTeam:navTop('team'), ntTactiek:navTop('tactiek'),
+      ntTransfers:navTop('transfers'), ntProfiel:navTop('profiel'),
+      squad, squadValue,
+      teamEersteClick:()=>this.setState({teamTab:'eerste'}), teamJongClick:()=>this.setState({teamTab:'jong'}),
+      teamEersteBg:segBg(this.state.teamTab==='eerste'), teamEersteFg:segFg(this.state.teamTab==='eerste'), teamEersteBorder:segBd(this.state.teamTab==='eerste'),
+      teamJongBg:segBg(this.state.teamTab==='jong'), teamJongFg:segFg(this.state.teamTab==='jong'), teamJongBorder:segBd(this.state.teamTab==='jong'),
+      pitch:this.pitchData, consensus:this.consensusData, formations,
+      tacJouwClick:()=>this.setState({tacticTab:'jouw'}), tacAllClick:()=>this.setState({tacticTab:'all'}),
+      tacJouwBg:segBg(this.state.tacticTab==='jouw'), tacJouwFg:segFg(this.state.tacticTab==='jouw'), tacJouwBorder:segBd(this.state.tacticTab==='jouw'),
+      tacAllBg:segBg(this.state.tacticTab==='all'), tacAllFg:segFg(this.state.tacticTab==='all'), tacAllBorder:segBd(this.state.tacticTab==='all'),
+      isTrfList:this.state.transferTab==='list', isTrfWish:this.state.transferTab==='wish',
+      trfListClick:()=>this.setState({transferTab:'list'}), trfWishClick:()=>this.setState({transferTab:'wish'}),
+      trfListBg:segBg(this.state.transferTab==='list'), trfListFg:segFg(this.state.transferTab==='list'), trfListBorder:segBd(this.state.transferTab==='list'),
+      trfWishBg:segBg(this.state.transferTab==='wish'), trfWishFg:segFg(this.state.transferTab==='wish'), trfWishBorder:segBd(this.state.transferTab==='wish'),
+      transferRank:this.transferRankData, wishRank:this.wishRankData,
+      closeArticle:()=>this.setState({articleOpen:false}),
+      summary:this.summaryData, meter:this.meterData, timeline, sources, comments,
+      sourceCount:this.sourcesData.length, commentCount:this.commentsData.length
+    };
+  }
+}
+</script>
+</body>
+</html>
