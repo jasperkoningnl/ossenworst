@@ -1,55 +1,129 @@
 @import "tailwindcss";
 
 /*
- * Retro Football Manager / Championship Manager 01-02 sfeer: donkere,
- * informatiedichte panelen met Ajax-rood als accent. Vaste dark theme
- * (geen prefers-color-scheme switch) — dit is de stijl van de app, geen
- * lichtmodus-fallback. Het definitieve designbestand (Claude Design) stuurt
- * de uiteindelijke uitwerking; deze tokens zijn de basis waarop dat verder
- * bouwt.
+ * Tokens 1:1 overgenomen uit design/OssenworstApp.dc.html (Claude Design).
+ * Neutrale/oppervlakte-tokens (bg, bar, head, card, fg*, bd*, hair*, track,
+ * stripe-b) zijn theme-afhankelijk en wisselen via [data-theme="light"] —
+ * gebruik ze in componenten als CSS-var (`bg-[var(--card)]` etc.), niet als
+ * Tailwind-kleur, zodat de light/dark-switch puur CSS-cascade blijft zonder
+ * her-render. Accentkleuren (ajax-red, accent-blue, confirmed, rumor, gold)
+ * zijn theme-onafhankelijk en wél als Tailwind-kleur geregistreerd omdat ze
+ * overal als vaste utility worden gebruikt (badges, knoppen, tier-stippen).
  */
 :root {
-  --background: #0b0c0e;
-  --surface: #16181c;
-  --surface-raised: #1e2126;
-  --border: #2b2e35;
-  --foreground: #e6e7ea;
-  --muted: #8b8f9a;
+  /* dark (default) */
+  --bg: #0a0d12;
+  --bar: #05070b;
+  --head: #0c1016;
+  --card: #10151d;
+  --cardhd: #0b0f16;
+  --chip: #11161e;
+  --surfa: #0e131a;
+  --surfb: #0b0f15;
+  --track: #1a212c;
+  --stripe-b: #141a23;
+  --frame: #04060a;
+
+  --bd: #1b2230;
+  --bd-soft: #161c26;
+  --bd2: #232b38;
+  --bd-card: #20283a;
+  --bd-dash: #2a3340;
+  --hair: #12171d;
+  --hair2: #14191f;
+
+  --fg: #ececE4;
+  --fg-hi: #f2f3ef;
+  --fg-strong: #e4e8ee;
+  --fg-c: #c3cad4;
+  --fg-body: #aeb6c2;
+  --fg-m: #99a2ae;
+  --fg2: #828b98;
+  --fg-label: #7a8290;
+  --fg3: #5c6470;
+  --fg5: #4e5663;
+  --fg6: #3c434e;
 
   --ajax-red: #d2122e;
-  --ajax-red-dim: #7a0d1c;
+  --accent-blue: #2c6fd6;
+  --confirmed: #39b14e;
+  --rumor: #e0a416;
+  --gold: #f2c94c;
 
-  --confirmed: #2e9c4e;
-  --rumor: #d98829;
-  --talkshow: #6b6f78;
+  --font-sans: var(--font-barlow), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-plex-mono), "SFMono-Regular", ui-monospace, monospace;
+}
 
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bar: #ffffff;
+  --head: #fdeeec;
+  --card: #fef5f4;
+  --cardhd: #fbebe9;
+  --chip: #fceeec;
+  --surfa: #ffffff;
+  --surfb: #fcf4f3;
+  --track: #f0dad7;
+  --stripe-b: #f8ecea;
+  --frame: #e7d6d3;
+
+  --bd: #f2dbd8;
+  --bd-soft: #f7e7e5;
+  --bd2: #ecd4d1;
+  --bd-card: #edd5d2;
+  --bd-dash: #e3c6c2;
+  --hair: #f5e5e3;
+  --hair2: #f5e5e3;
+
+  --fg: #1b1416;
+  --fg-hi: #0f090b;
+  --fg-strong: #241d1f;
+  --fg-c: #463b3d;
+  --fg-body: #4a3f41;
+  --fg-m: #6e6264;
+  --fg2: #736567;
+  --fg-label: #847678;
+  --fg3: #8c7d7f;
+  --fg5: #a99b9d;
+  --fg6: #b9abad;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-surface-raised: var(--surface-raised);
-  --color-border: var(--border);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-
   --color-ajax-red: var(--ajax-red);
-  --color-ajax-red-dim: var(--ajax-red-dim);
-
+  --color-accent-blue: var(--accent-blue);
   --color-confirmed: var(--confirmed);
   --color-rumor: var(--rumor);
-  --color-talkshow: var(--talkshow);
+  --color-gold: var(--gold);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.35;
+}
+
+.osw-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.osw-scroll {
+  scrollbar-width: none;
+}
+
+@keyframes osw-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.osw-pulse {
+  animation: osw-pulse 1.8s infinite;
 }

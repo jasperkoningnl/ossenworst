@@ -1,0 +1,14 @@
+/** Merk-icoon 1:1 uit design/OssenworstApp.dc.html. */
+export function OssenworstLogo({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 40 40" className={className} style={{ display: "block" }}>
+      <circle cx="20" cy="20" r="13" fill="#FBF3E7" />
+      <circle cx="20" cy="20" r="10.3" fill="#63160F" />
+      <circle cx="16.3" cy="16.8" r="2" fill="#E9D9BC" />
+      <circle cx="23.6" cy="21.6" r="2.4" fill="#E9D9BC" />
+      <circle cx="18.4" cy="24.2" r="1.6" fill="#E9D9BC" />
+      <circle cx="24.2" cy="15.4" r="1.2" fill="#2A0A07" />
+      <circle cx="20.6" cy="20.2" r="1.05" fill="#2A0A07" />
+    </svg>
+  );
+}
