@@ -1,24 +1,55 @@
 @import "tailwindcss";
 
+/*
+ * Retro Football Manager / Championship Manager 01-02 sfeer: donkere,
+ * informatiedichte panelen met Ajax-rood als accent. Vaste dark theme
+ * (geen prefers-color-scheme switch) — dit is de stijl van de app, geen
+ * lichtmodus-fallback. Het definitieve designbestand (Claude Design) stuurt
+ * de uiteindelijke uitwerking; deze tokens zijn de basis waarop dat verder
+ * bouwt.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0b0c0e;
+  --surface: #16181c;
+  --surface-raised: #1e2126;
+  --border: #2b2e35;
+  --foreground: #e6e7ea;
+  --muted: #8b8f9a;
+
+  --ajax-red: #d2122e;
+  --ajax-red-dim: #7a0d1c;
+
+  --confirmed: #2e9c4e;
+  --rumor: #d98829;
+  --talkshow: #6b6f78;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
-}
+  --color-muted: var(--muted);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ajax-red: var(--ajax-red);
+  --color-ajax-red-dim: var(--ajax-red-dim);
+
+  --color-confirmed: var(--confirmed);
+  --color-rumor: var(--rumor);
+  --color-talkshow: var(--talkshow);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.35;
 }
