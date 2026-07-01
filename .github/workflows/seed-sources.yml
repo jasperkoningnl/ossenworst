@@ -1,0 +1,13 @@
+name: Seed sources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Seed sources via admin API
+        run: |
+          curl -sf -X POST "${{ vars.APP_URL }}/api/admin/seed-sources" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}"
