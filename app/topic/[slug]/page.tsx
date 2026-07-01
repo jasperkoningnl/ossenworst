@@ -7,7 +7,7 @@ import { AISummaryCard } from "@/components/topic/AISummaryCard";
 import { Timeline } from "@/components/topic/Timeline";
 import { SourcesList } from "@/components/topic/SourcesList";
 import { CommentList } from "@/components/topic/CommentList";
-import { findTopicBySlug, topicDetails } from "@/lib/mock/topics";
+import { getTopicDetailBySlug } from "@/lib/data/topics";
 
 export default async function TopicDetailPage({
   params,
@@ -15,10 +15,10 @@ export default async function TopicDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const item = findTopicBySlug(slug);
-  if (!item) notFound();
+  const result = await getTopicDetailBySlug(slug);
+  if (!result) notFound();
 
-  const detail = topicDetails[item.id];
+  const { item, detail } = result;
 
   return (
     <div>
@@ -51,7 +51,8 @@ export default async function TopicDetailPage({
         </h1>
         <div className="mb-3.5 font-mono text-[8.5px]" style={{ color: "var(--fg3)" }}>
           BIJGEWERKT {new Date(item.last_activity_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short" }).toUpperCase()}
-          {detail && ` · SAGA LOOPT SINDS ${new Date(detail.sagaStartedAt).toLocaleDateString("nl-NL", { day: "2-digit", month: "short" }).toUpperCase()}`}
+          {" · SAGA LOOPT SINDS "}
+          {new Date(detail.sagaStartedAt).toLocaleDateString("nl-NL", { day: "2-digit", month: "short" }).toUpperCase()}
         </div>
 
         {item.hasHero && (
@@ -71,31 +72,21 @@ export default async function TopicDetailPage({
                 FOTO
               </span>
             </div>
-            {detail && (
-              <div className="flex justify-between gap-2.5 pt-1.5 font-mono text-[8px] leading-snug">
-                <span style={{ color: "var(--fg2)" }}>{detail.imageCaption}</span>
-                <span className="whitespace-nowrap" style={{ color: "var(--fg3)" }}>
-                  {detail.imageCredit}
-                </span>
-              </div>
-            )}
+            <div className="flex justify-between gap-2.5 pt-1.5 font-mono text-[8px] leading-snug">
+              <span style={{ color: "var(--fg2)" }}>{detail.imageCaption}</span>
+              <span className="whitespace-nowrap" style={{ color: "var(--fg3)" }}>
+                {detail.imageCredit}
+              </span>
+            </div>
           </div>
         )}
 
         <ConfidenceMeter confidence={item.confidence} />
 
-        {detail ? (
-          <>
-            <AISummaryCard lines={detail.summaryLines} />
-            <Timeline entries={detail.timeline} />
-            <SourcesList sources={detail.sources} />
-            <CommentList comments={detail.comments} />
-          </>
-        ) : (
-          <p className="pb-8 text-[13px]" style={{ color: "var(--fg2)" }}>
-            Nog geen uitgebreide tijdlijn beschikbaar voor dit bericht.
-          </p>
-        )}
+        <AISummaryCard lines={detail.summaryLines} />
+        <Timeline entries={detail.timeline} />
+        <SourcesList sources={detail.sources} />
+        <CommentList comments={detail.comments} />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { sourceTierColors } from "@/lib/theme/colors";
-import type { TopicSourceEntry } from "@/lib/mock/topics";
+import type { TopicSourceEntry } from "@/lib/types/feed";
 
 export function SourcesList({ sources }: { sources: TopicSourceEntry[] }) {
   return (

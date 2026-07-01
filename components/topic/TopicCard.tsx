@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CATEGORY_COLORS, categoryTextColor } from "@/lib/theme/colors";
 import { ConfidenceBadge } from "./ConfidenceBadge";
-import type { TopicFeedItem } from "@/lib/mock/topics";
+import type { TopicFeedItem } from "@/lib/types/feed";
 
 function formatTimestamp(iso: string) {
   const d = new Date(iso);

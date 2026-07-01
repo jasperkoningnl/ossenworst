@@ -10,11 +10,14 @@ export interface SourceSeed {
   language: string;
   fetchMethod: FetchMethod;
   /**
-   * Bewust null gelaten: exacte RSS-feed-paden verschillen per site en wijzigen
-   * regelmatig. Vul aan/verifieer per bron via de admin-interface vóórdat de
-   * pipeline voor die bron wordt geactiveerd (`enabled`).
+   * Bewust null gelaten voor de meeste bronnen: exacte RSS-feed-paden
+   * verschillen per site en wijzigen regelmatig. Vul aan/verifieer per bron
+   * via de admin-interface vóórdat de pipeline voor die bron wordt
+   * geactiveerd (`enabled`). NOS Voetbal is als enige geverifieerd
+   * (https://feeds.nos.nl/nosvoetbal) en dient als proof-of-concept voor
+   * Fase 1.
    */
-  feedUrl: null;
+  feedUrl: string | null;
   enabled: boolean;
 }
 
@@ -36,7 +39,7 @@ export interface SourceSeed {
 export const sourceSeeds: SourceSeed[] = [
   // --- Nederland ---
   { name: "Ajax.nl", slug: "ajax-nl", url: "https://www.ajax.nl", tier: 1, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
-  { name: "NOS Sport", slug: "nos-sport", url: "https://nos.nl/sport", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
+  { name: "NOS Sport", slug: "nos-sport", url: "https://nos.nl/sport", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://feeds.nos.nl/nosvoetbal", enabled: true },
   { name: "Voetbal International", slug: "vi", url: "https://www.vi.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
   { name: "De Telegraaf", slug: "de-telegraaf", url: "https://www.telegraaf.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
   { name: "AD Sportwereld", slug: "ad-sportwereld", url: "https://www.ad.nl/sport", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },

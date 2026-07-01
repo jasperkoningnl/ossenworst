@@ -65,6 +65,8 @@ export interface TopicItem {
   reported_at: string;
   snippet: string | null;
   contribution: string | null;
+  /** Wat topics.confidence was direct na het toevoegen van dit item — toont de evolutie in de tijdlijn. */
+  confidence_at: ConfidenceLevel;
 }
 
 export interface Translation {

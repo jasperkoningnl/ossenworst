@@ -1,61 +1,15 @@
-import type { Topic } from "@/lib/types/database";
-import type { ConfidenceLevel, TopicCategory } from "@/lib/types/enums";
+import type { TopicCategory, ConfidenceLevel } from "@/lib/types/enums";
+import { slugify } from "@/lib/utils/slug";
+import type { TopicDetail, TopicFeedItem } from "@/lib/types/feed";
 
 /**
  * Mock-nieuwsfeed, overgenomen uit design/OssenworstApp.dc.html (`rawFeed`,
- * `timelineData`, `summaryData`, `sourcesData`, `commentsData`). Vervangen
- * door echte `GET /api/topics` / `GET /api/topics/[slug]`-fetches in Fase 1.
+ * `timelineData`, `summaryData`, `sourcesData`, `commentsData`). Fase 1
+ * vervangt dit door echte data uit lib/data/topics.ts; deze fixture blijft
+ * staan voor eventueel later testgebruik.
  */
 
-export interface TopicFeedItem extends Topic {
-  /** Korte teaser voor de feed-rij (aparte granulariteit dan de volledige AI-samenvatting in het detail). */
-  teaser: string;
-  sourceCount: number;
-  reactionCount: string;
-  trend: string | null;
-  trendColor: string | null;
-  hasHero: boolean;
-  hasThumb: boolean;
-  imageCredit: string | null;
-  hasDetail: boolean;
-}
-
-export interface TopicSummaryLine {
-  source: string;
-  text: string;
-}
-
-export interface TopicTimelineEntry {
-  date: string;
-  delta: string;
-  headline: string;
-  snippet: string;
-  confidence: ConfidenceLevel;
-}
-
-export interface TopicSourceEntry {
-  name: string;
-  date: string;
-  tier: 1 | 2 | 3;
-}
-
-export interface TopicComment {
-  username: string;
-  timeAgo: string;
-  body: string;
-  upvotes: number;
-  isAnonymous: boolean;
-}
-
-export interface TopicDetail {
-  summaryLines: TopicSummaryLine[];
-  timeline: TopicTimelineEntry[];
-  sources: TopicSourceEntry[];
-  comments: TopicComment[];
-  imageCaption: string;
-  imageCredit: string;
-  sagaStartedAt: string;
-}
+export type { TopicFeedItem, TopicSummaryLine, TopicTimelineEntry, TopicSourceEntry, TopicComment, TopicDetail } from "@/lib/types/feed";
 
 interface RawFeedItem {
   id: string;
@@ -92,15 +46,6 @@ const rawFeed: RawFeedItem[] = [
   { id: "ceb", cat: "TRANSFER", tier: "gerucht", h: "Ceballos-akkoord nabij; Galarza als alternatief", s: "Mundo Deportivo: akkoord met Real Madrid nabij.", t: "2026-06-27T13:35:00.000Z", src: 5, re: "342", trend: "", trendC: "", art: false },
   { id: "oef", cat: "WEDSTRIJD", tier: "bevestigd", h: "Oefenprogramma bekend: Ajax opent in Oostenrijk", s: "Trainingskamp en twee oefenduels op het programma.", t: "2026-06-25T21:33:00.000Z", src: 5, re: "73", trend: "", trendC: "", art: false },
 ];
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 export const topicFeed: TopicFeedItem[] = rawFeed.map((it) => ({
   id: it.id,

@@ -42,6 +42,35 @@ wijzigt (nieuwe bron toegevoegd, tier aangepast, etc.). Bestaande `enabled`-vlag
 in de database blijven staan — de seed overschrijft alleen naam/url/tier/taal/
 fetch-methode, niet je handmatige activaties.
 
+## Nieuwsaggregatiepipeline (Fase 1)
+
+Vercel Cron draait op het Hobby-plan maar 1x per dag (en onnauwkeurig binnen dat
+uur) — te traag voor een nieuwsfeed. De pipeline wordt daarom, net als de
+bronnen-seed, getriggerd door een **GitHub Action op een schedule** die
+`POST /api/cron/tick` aanroept (beveiligd met `CRON_SECRET`). Die route enqueued
+zelf due `fetch_source`-jobs en verwerkt de wachtrij binnen een tijdsbudget; blijft
+er werk over, dan triggert de route zichzelf opnieuw (self-chaining) zodat één
+Vercel-invocatie nooit de 10s-limiet nadert.
+
+**Eenmalige setup** (naast wat je al deed voor bronnen seeden):
+1. Zet `CRON_SECRET` in Vercel op een willekeurige, geheime waarde (staat al in
+   `.env.example`).
+2. Zet in GitHub (Settings → Secrets and variables → Actions):
+   - Secret `CRON_SECRET` — dezelfde waarde als in Vercel.
+   - Variable `APP_URL` — dezelfde als bij de bronnen-seed (je Vercel-URL).
+
+De workflow **"Pipeline tick"** draait vanaf dat moment automatisch elke ~5
+minuten (GitHub kan schedules onder hoge load vertragen/overslaan; voor een
+nieuwsfeed is dat geen probleem). Handmatig testen kan via *Run workflow* in de
+Actions-tab.
+
+**Bronnen met een echte feed_url:** alleen NOS Voetbal
+(`https://feeds.nos.nl/nosvoetbal`) is voorlopig geverifieerd en `enabled` in
+`lib/sources/sources.seed.ts`. De overige bronnen krijgen pas effect zodra je
+zelf een echte `feed_url` toevoegt (in `sources.seed.ts` + opnieuw de
+"Seed sources"-workflow draaien, of rechtstreeks in de `sources`-tabel) en
+`enabled` op `true` zet.
+
 ## Scripts
 
 - `npm run dev` — development server

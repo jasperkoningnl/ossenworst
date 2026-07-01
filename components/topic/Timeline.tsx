@@ -1,5 +1,5 @@
 import { CONFIDENCE_COLOR } from "@/lib/theme/colors";
-import type { TopicTimelineEntry } from "@/lib/mock/topics";
+import type { TopicTimelineEntry } from "@/lib/types/feed";
 
 export function Timeline({ entries }: { entries: TopicTimelineEntry[] }) {
   return (
