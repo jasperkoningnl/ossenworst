@@ -1,8 +1,8 @@
-export default function Home() {
+export default function TeamPage() {
   return (
     <div className="px-4 py-6">
       <p className="text-sm text-muted">
-        De nieuwsfeed wordt hier getoond zodra de aggregatiepipeline draait.
+        Eerste elftal en Jong Ajax volgen in een latere fase.
       </p>
     </div>
   );

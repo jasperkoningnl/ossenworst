@@ -1,8 +1,8 @@
-export default function Home() {
+export default function TransfersPage() {
   return (
     <div className="px-4 py-6">
       <p className="text-sm text-muted">
-        De nieuwsfeed wordt hier getoond zodra de aggregatiepipeline draait.
+        Transferlijst en verlanglijst volgen in een latere fase.
       </p>
     </div>
   );
