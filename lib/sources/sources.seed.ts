@@ -18,7 +18,7 @@ export const sourceSeeds: SourceSeed[] = [
   // --- Nederland ---
   {
     name: "Ajax.nl", slug: "ajax-nl", url: "https://www.ajax.nl", tier: 1, country: "NL", language: "nl", fetchMethod: "scrape", feedUrl: null, enabled: true,
-    scrapeConfig: { listUrl: "https://www.ajax.nl/nieuws/", articleSelector: "article, .news-item, [class*='card']", titleSelector: "h2, h3, .title", linkSelector: "a", snippetSelector: "p, .summary, .intro" },
+    scrapeConfig: { listUrl: "https://www.ajax.nl/club/pers/persberichten/", articleSelector: "article.card", titleSelector: "a.card__title-link", linkSelector: "a.card__title-link", snippetSelector: ".card__subtext .ellipsis" },
   },
   { name: "NOS Sport", slug: "nos-sport", url: "https://nos.nl/sport", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://feeds.nos.nl/nossportalgemeen", enabled: true },
   { name: "Ajax Supporters", slug: "ajax-supporters", url: "https://ajax.supporters.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://ajax.supporters.nl/nieuws/rss.xml", enabled: true },
