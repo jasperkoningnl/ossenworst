@@ -3,11 +3,16 @@ import { sourceSeeds } from "./sources.seed";
 
 /**
  * Synct de statische sources.seed.ts naar de `sources`-tabel. Bestaande rijen
- * (op slug) worden alleen aangevuld, niet overschreven op `enabled`, zodat
- * handmatige activatie via de admin-interface niet wordt teruggedraaid door
- * een herhaalde seed-run.
+ * (op slug) worden standaard alleen aangevuld, niet overschreven op `enabled`,
+ * zodat handmatige activatie via de admin-interface niet wordt teruggedraaid
+ * door een herhaalde seed-run. Met `overwriteEnabled` wordt de seed juist
+ * leidend — nodig wanneer bronnen in de seed zijn aangezet nádat ze al
+ * (als disabled) in de database stonden.
  */
-export async function upsertSources(supabase: SupabaseClient) {
+export async function upsertSources(
+  supabase: SupabaseClient,
+  options: { overwriteEnabled?: boolean } = {}
+) {
   const { data: existing } = await supabase.from("sources").select("slug, enabled");
   const enabledBySlug = new Map((existing ?? []).map((row) => [row.slug, row.enabled]));
 
@@ -21,7 +26,9 @@ export async function upsertSources(supabase: SupabaseClient) {
     fetch_method: seed.fetchMethod,
     feed_url: seed.feedUrl,
     scrape_config: seed.scrapeConfig ?? null,
-    enabled: enabledBySlug.get(seed.slug) ?? seed.enabled,
+    enabled: options.overwriteEnabled
+      ? seed.enabled
+      : enabledBySlug.get(seed.slug) ?? seed.enabled,
   }));
 
   return supabase.from("sources").upsert(rows, { onConflict: "slug" });

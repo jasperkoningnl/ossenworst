@@ -8,6 +8,9 @@ import { mergeRawItem } from "./merge";
 import { summarizeTopicJob } from "./summarize";
 
 const MAX_ATTEMPTS = 5;
+// Dubbele fetch-jobs voor dezelfde bron (bv. door race tussen overlappende
+// ticks) zijn hiermee onschadelijk: net gefetchte bron = job direct klaar.
+const FETCH_SKIP_MINUTES = 10;
 
 /** Voert één geclaimd job uit en zet status/backoff op basis van het resultaat. */
 export async function processJob(supabase: SupabaseClient, job: Job) {
@@ -20,6 +23,10 @@ export async function processJob(supabase: SupabaseClient, job: Job) {
           .eq("id", job.payload.sourceId as string)
           .single();
         if (error) throw error;
+        const skipCutoff = Date.now() - FETCH_SKIP_MINUTES * 60 * 1000;
+        if (source.last_fetched_at && new Date(source.last_fetched_at).getTime() > skipCutoff) {
+          break;
+        }
         if (source.fetch_method === "scrape") {
           await fetchScrapeSource(supabase, source);
         } else {

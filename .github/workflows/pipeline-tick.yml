@@ -9,7 +9,20 @@ jobs:
   tick:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger pipeline tick
+      # Vercel's recursie-bescherming blokkeert het self-chainen van de route,
+      # dus deze lus is het primaire "doorwerk"-mechanisme: tikken tot de
+      # queue leeg is (of het iteratieplafond bereikt is). Is de queue leeg,
+      # dan stopt de lus na één iteratie en kost een run <1 minuut.
+      - name: Tick tot de queue leeg is
         run: |
-          curl -sf -X POST "${{ vars.APP_URL }}/api/cron/tick" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          MAX_ITERATIONS=15
+          for i in $(seq 1 $MAX_ITERATIONS); do
+            RESPONSE=$(curl -sf --max-time 120 -X POST "${{ vars.APP_URL }}/api/cron/tick" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+            echo "tick $i: $RESPONSE"
+            REMAINING=$(echo "$RESPONSE" | jq -r '.remaining // 0')
+            if [ "$REMAINING" -eq 0 ]; then
+              echo "Queue leeg na $i tick(s)."
+              break
+            fi
+          done

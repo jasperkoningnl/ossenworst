@@ -17,12 +17,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const overwriteEnabled =
+    new URL(request.url).searchParams.get("overwriteEnabled") === "1";
+
   const supabase = createServiceClient();
-  const { error } = await upsertSources(supabase);
+  const { error } = await upsertSources(supabase, { overwriteEnabled });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, seeded: sourceSeeds.length });
+  return NextResponse.json({ ok: true, seeded: sourceSeeds.length, overwriteEnabled });
 }

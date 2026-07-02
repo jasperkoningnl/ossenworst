@@ -39,8 +39,11 @@ De 60+ bronnen staan als data in `lib/sources/sources.seed.ts`. Deze worden naar
 **Seeden/bijwerken:** GitHub → Actions → workflow **"Seed sources"** → *Run workflow*.
 Dit is nodig na het opzetten van de database en telkens wanneer `sources.seed.ts`
 wijzigt (nieuwe bron toegevoegd, tier aangepast, etc.). Bestaande `enabled`-vlaggen
-in de database blijven staan — de seed overschrijft alleen naam/url/tier/taal/
-fetch-methode, niet je handmatige activaties.
+in de database blijven standaard staan — de seed overschrijft alleen naam/url/tier/
+taal/fetch-methode, niet je handmatige activaties. Wil je juist dat de
+`enabled`-vlaggen uit de seed leidend zijn (bijvoorbeeld omdat bronnen in de seed
+zijn aangezet nádat ze al als disabled in de database stonden), vink dan bij
+*Run workflow* de optie **overwrite_enabled** aan.
 
 ## Nieuwsaggregatiepipeline (Fase 1)
 
@@ -48,9 +51,17 @@ Vercel Cron draait op het Hobby-plan maar 1x per dag (en onnauwkeurig binnen dat
 uur) — te traag voor een nieuwsfeed. De pipeline wordt daarom, net als de
 bronnen-seed, getriggerd door een **GitHub Action op een schedule** die
 `POST /api/cron/tick` aanroept (beveiligd met `CRON_SECRET`). Die route enqueued
-zelf due `fetch_source`-jobs en verwerkt de wachtrij binnen een tijdsbudget; blijft
-er werk over, dan triggert de route zichzelf opnieuw (self-chaining) zodat één
-Vercel-invocatie nooit de 10s-limiet nadert.
+zelf due `fetch_source`-jobs en verwerkt de wachtrij binnen een tijdsbudget
+(~45s, meerdere jobs parallel). Blijft er werk over, dan **tickt de workflow
+zelf in een lus door** tot de queue leeg is (met een iteratieplafond). De route
+probeert daarnaast zichzelf opnieuw te triggeren (self-chaining), maar Vercel's
+recursie-bescherming kan die self-requests blokkeren — de Action-lus is dus het
+primaire mechanisme.
+
+**Status inzien:** GitHub → Actions → workflow **"Pipeline status"** → *Run
+workflow* toont in de run-samenvatting de queue-diepte per jobtype, mislukte
+jobs, falende bronnen en de nieuwste topics (via `GET
+/api/admin/pipeline-status`, beveiligd met `ADMIN_SECRET`).
 
 **Eenmalige setup** (naast wat je al deed voor bronnen seeden):
 1. Zet `CRON_SECRET` in Vercel op een willekeurige, geheime waarde (staat al in
