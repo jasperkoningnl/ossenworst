@@ -1,0 +1,54 @@
+name: Pipeline status
+
+# Handmatig te starten via de Actions-tab. Haalt /api/admin/pipeline-status op
+# met het al aanwezige ADMIN_SECRET en toont het resultaat in de run-samenvatting,
+# zodat je de pipeline kunt inspecteren zonder zelf te hoeven curlen.
+on:
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Haal pipeline-status op
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+        run: |
+          RESPONSE=$(curl -sf -H "Authorization: Bearer $ADMIN_SECRET" "$APP_URL/api/admin/pipeline-status")
+          echo "$RESPONSE" | jq .
+          {
+            echo "## Pipeline status ($(date -u '+%H:%M UTC'))"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Topics totaal | $(echo "$RESPONSE" | jq -r '.topics.total') |"
+            echo "| Jobs nu aan de beurt | $(echo "$RESPONSE" | jq -r '.jobs.queuedDueNow') |"
+            echo "| Jobs afgerond | $(echo "$RESPONSE" | jq -r '.jobs.done') |"
+            echo "| Raw items pending | $(echo "$RESPONSE" | jq -r '.rawItems.pending // 0') |"
+            echo "| Raw items verwerkt | $(echo "$RESPONSE" | jq -r '.rawItems.processed // 0') |"
+            echo "| Raw items geskipt | $(echo "$RESPONSE" | jq -r '.rawItems.skipped // 0') |"
+            echo "| Bronnen enabled / falend | $(echo "$RESPONSE" | jq -r '.sources.enabled') / $(echo "$RESPONSE" | jq -r '.sources.failing | length') |"
+            echo ""
+            echo "### Queue per jobtype"
+            echo '```'
+            echo "$RESPONSE" | jq -r '.jobs.byType[] | "\(.type): \(.queued) queued, \(.running) running, \(.error) error"'
+            echo '```'
+            echo ""
+            echo "### Nieuwste topics"
+            echo '```'
+            echo "$RESPONSE" | jq -r '.topics.latest[] | "[\(.category)/\(.confidence)] \(.title) (\(.item_count) bron(nen))"'
+            echo '```'
+            echo ""
+            echo "### Falende bronnen"
+            echo '```'
+            echo "$RESPONSE" | jq -r 'if (.sources.failing | length) == 0 then "geen" else .sources.failing[] | "\(.slug): \(.last_status)" end'
+            echo '```'
+            echo ""
+            echo "<details><summary>Volledige JSON</summary>"
+            echo ""
+            echo '```json'
+            echo "$RESPONSE" | jq .
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
