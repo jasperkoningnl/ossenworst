@@ -2,7 +2,13 @@ import Parser from "rss-parser";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Source } from "@/lib/types/database";
 
-const parser = new Parser();
+const parser = new Parser({
+  headers: {
+    "User-Agent": "OssenworstManager/1.0 (+https://ossenworst.nl)",
+    "Accept": "application/rss+xml, application/xml, text/xml, */*",
+  },
+  timeout: 8000,
+});
 
 function externalIdFor(item: { guid?: string; link?: string; title?: string }): string {
   return item.guid || item.link || item.title || crypto.randomUUID();
