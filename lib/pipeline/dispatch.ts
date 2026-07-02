@@ -3,6 +3,7 @@ import type { Job } from "@/lib/types/database";
 import { fetchRssSource } from "./fetchers/rss";
 import { fetchScrapeSource } from "./fetchers/scrape";
 import { processRawItem } from "./relevance";
+import { translateRawItem } from "./translate";
 import { mergeRawItem } from "./merge";
 import { summarizeTopicJob } from "./summarize";
 
@@ -36,8 +37,9 @@ export async function processJob(supabase: SupabaseClient, job: Job) {
         await summarizeTopicJob(supabase, job.payload.topicId as string);
         break;
       case "translate":
+        await translateRawItem(supabase, job.payload.rawItemId as string);
+        break;
       case "sync_squad":
-        // Fase 2 / Fase 3 — nog geen handler; job blijft ongebruikt.
         break;
     }
     await supabase.from("jobs").update({ status: "done" }).eq("id", job.id);

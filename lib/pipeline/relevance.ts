@@ -18,11 +18,11 @@ export function isRelevant(title: string, body: string | null): boolean {
   return KEYWORDS.some((keyword) => text.includes(keyword));
 }
 
-/** Bepaalt relevantie van een raw_item en enqueued een merge-job of markeert het als skipped. */
+/** Bepaalt relevantie van een raw_item en routeert naar translate (niet-NL) of merge (NL). */
 export async function processRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error } = await supabase
     .from("raw_items")
-    .select("title, body")
+    .select("title, body, language")
     .eq("id", rawItemId)
     .single();
   if (error) throw error;
@@ -32,6 +32,8 @@ export async function processRawItem(supabase: SupabaseClient, rawItemId: string
     return { relevant: false };
   }
 
-  await supabase.from("jobs").insert({ type: "merge", payload: { rawItemId } });
+  const needsTranslation = rawItem.language !== "nl";
+  const jobType = needsTranslation ? "translate" : "merge";
+  await supabase.from("jobs").insert({ type: jobType, payload: { rawItemId } });
   return { relevant: true };
 }
