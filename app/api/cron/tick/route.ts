@@ -4,12 +4,14 @@ import { processJob } from "@/lib/pipeline/dispatch";
 import { isRelevant, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
 import type { Job } from "@/lib/types/database";
 
-// Fluid compute staat >10s toe; ruime marge zodat een Claude-call die net vóór
-// de budget-deadline start de invocatie niet laat afbreken (en de job als
+// Fluid compute staat >10s toe; ruime marge zodat een batch die net vóór de
+// budget-deadline start de invocatie niet laat afbreken (en de jobs als
 // stale 'running' achterlaat).
-export const maxDuration = 60;
+export const maxDuration = 90;
 
-const BUDGET_MS = 8000;
+// Ruim binnen maxDuration; laat per invocatie tientallen jobs toe i.p.v. de
+// oude ~6 (het 8s-budget stamt uit het ontwerp voor de 10s-limiet).
+const BUDGET_MS = 45_000;
 const FETCH_INTERVAL_MINUTES = 15;
 const BULK_PROCESS_LIMIT = 200;
 // Jobs zijn I/O-bound (Claude-call of feed-fetch); een paar parallel verwerken
@@ -63,10 +65,15 @@ export async function POST(request: Request) {
     const origin = new URL(request.url).origin;
     after(async () => {
       try {
-        await fetch(`${origin}/api/cron/tick`, {
+        const res = await fetch(`${origin}/api/cron/tick`, {
           method: "POST",
           headers: { authorization: `Bearer ${expected}` },
         });
+        if (!res.ok) {
+          // Vercel's recursie-bescherming kan self-requests blokkeren (508);
+          // de Action-lus in pipeline-tick.yml is daarom het primaire kanaal.
+          console.error(`Self-chain tick kreeg status ${res.status}`);
+        }
       } catch (err) {
         console.error("Self-chain tick faalde:", err);
       }
@@ -113,11 +120,17 @@ async function enqueueDueFetches(supabase: ReturnType<typeof createServiceClient
   if (error) throw error;
   if (!dueSources || dueSources.length === 0) return;
 
-  const { data: alreadyQueued } = await supabase
+  const { data: alreadyQueued, error: queuedError } = await supabase
     .from("jobs")
     .select("payload")
     .eq("type", "fetch_source")
     .in("status", ["queued", "running"]);
+  // Zonder zicht op de bestaande queue niet blind inserten: dat stapelt
+  // dubbele fetch-jobs op (één set per tick).
+  if (queuedError) {
+    console.error("Kon bestaande fetch-jobs niet lezen, sla enqueue over:", queuedError);
+    return;
+  }
 
   const queuedSourceIds = new Set(
     (alreadyQueued ?? []).map((j) => (j.payload as Record<string, unknown>)?.sourceId as string)

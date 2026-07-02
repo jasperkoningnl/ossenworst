@@ -2,6 +2,11 @@ name: Seed sources
 
 on:
   workflow_dispatch:
+    inputs:
+      overwrite_enabled:
+        description: "Enabled-vlaggen uit sources.seed.ts overnemen (zet bronnen aan/uit volgens de seed)"
+        type: boolean
+        default: false
 
 jobs:
   seed:
@@ -9,5 +14,9 @@ jobs:
     steps:
       - name: Seed sources via admin API
         run: |
-          curl -sf -X POST "${{ vars.APP_URL }}/api/admin/seed-sources" \
+          QUERY=""
+          if [ "${{ inputs.overwrite_enabled }}" = "true" ]; then
+            QUERY="?overwriteEnabled=1"
+          fi
+          curl -sf -X POST "${{ vars.APP_URL }}/api/admin/seed-sources$QUERY" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}"
