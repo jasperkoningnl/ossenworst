@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { translateToNl } from "@/lib/claude/translate";
+import { translateToNl, TRANSLATE_MODEL } from "@/lib/claude/translate";
 
 /**
  * Vertaalt een niet-NL raw_item naar het Nederlands, slaat het resultaat op in
@@ -9,12 +9,19 @@ import { translateToNl } from "@/lib/claude/translate";
 export async function translateRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: existing } = await supabase
     .from("translations")
-    .select("id")
+    .select("translated_title, translated_body")
     .eq("raw_item_id", rawItemId)
     .eq("target_lang", "nl")
     .maybeSingle();
 
   if (existing) {
+    // Cache-hit kan ook betekenen: vorige run crashte ná het cachen maar vóór
+    // het bijwerken van het raw_item. Pas de vertaling dus alsnog toe, anders
+    // draait merge op de onvertaalde tekst.
+    await supabase
+      .from("raw_items")
+      .update({ title: existing.translated_title, body: existing.translated_body })
+      .eq("id", rawItemId);
     await supabase.from("jobs").insert({ type: "merge", payload: { rawItemId } });
     return { cached: true };
   }
@@ -35,7 +42,7 @@ export async function translateRawItem(supabase: SupabaseClient, rawItemId: stri
       target_lang: "nl",
       translated_title: result.translatedTitle,
       translated_body: result.translatedBody,
-      model: "claude-haiku-4-5-20251001",
+      model: TRANSLATE_MODEL,
     });
 
     await supabase

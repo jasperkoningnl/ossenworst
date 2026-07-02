@@ -1,12 +1,19 @@
 import { NextResponse, after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { processJob } from "@/lib/pipeline/dispatch";
-import { isRelevant } from "@/lib/pipeline/relevance";
+import { isRelevant, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
 import type { Job } from "@/lib/types/database";
+
+// Fluid compute staat >10s toe; ruime marge zodat een Claude-call die net vóór
+// de budget-deadline start de invocatie niet laat afbreken (en de job als
+// stale 'running' achterlaat).
+export const maxDuration = 60;
 
 const BUDGET_MS = 8000;
 const FETCH_INTERVAL_MINUTES = 15;
 const BULK_PROCESS_LIMIT = 200;
+const STALE_RUNNING_MINUTES = 10;
+const DONE_JOB_RETENTION_DAYS = 7;
 
 export async function POST(request: Request) {
   const expected = process.env.CRON_SECRET;
@@ -18,6 +25,8 @@ export async function POST(request: Request) {
   const supabase = createServiceClient();
   const start = Date.now();
 
+  await requeueStaleJobs(supabase);
+  await pruneOldJobs(supabase);
   await enqueueDueFetches(supabase);
 
   const bulkProcessed = await bulkDrainProcessItems(supabase);
@@ -59,6 +68,33 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true, processed, bulkProcessed, remaining: remaining ?? 0 });
 }
 
+/**
+ * Zet jobs die te lang op 'running' staan (invocatie gecrasht/getimed-out)
+ * terug in de queue. Zonder dit blijft zo'n job eeuwig hangen — en wordt een
+ * bron met een hangende fetch_source-job nooit meer opgehaald, omdat
+ * enqueueDueFetches bronnen met een lopende job overslaat.
+ */
+async function requeueStaleJobs(supabase: ReturnType<typeof createServiceClient>) {
+  const cutoff = new Date(Date.now() - STALE_RUNNING_MINUTES * 60 * 1000).toISOString();
+  const { error } = await supabase
+    .from("jobs")
+    .update({ status: "queued", locked_at: null })
+    .eq("status", "running")
+    .lt("locked_at", cutoff);
+  if (error) console.error("Requeue van stale jobs faalde:", error);
+}
+
+/** Voorkomt dat de jobs-tabel onbeperkt groeit. */
+async function pruneOldJobs(supabase: ReturnType<typeof createServiceClient>) {
+  const cutoff = new Date(Date.now() - DONE_JOB_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const { error } = await supabase
+    .from("jobs")
+    .delete()
+    .eq("status", "done")
+    .lt("created_at", cutoff);
+  if (error) console.error("Opschonen van oude jobs faalde:", error);
+}
+
 async function enqueueDueFetches(supabase: ReturnType<typeof createServiceClient>) {
   const cutoff = new Date(Date.now() - FETCH_INTERVAL_MINUTES * 60 * 1000).toISOString();
   const { data: dueSources, error } = await supabase
@@ -91,16 +127,35 @@ async function enqueueDueFetches(supabase: ReturnType<typeof createServiceClient
  * Verwerkt process_item-jobs in bulk zonder de claim-queue. Dit is puur een
  * keyword-check — geen externe API nodig — en kan honderden items per seconde
  * aan i.p.v. de ~6/tick die de normale queue haalt.
+ *
+ * De jobs worden eerst atomair geclaimd (status queued → running), zodat een
+ * overlappende tick (self-chain + GitHub Action) niet dezelfde items dubbel
+ * verwerkt en dubbele merge/translate-jobs aanmaakt.
  */
 async function bulkDrainProcessItems(supabase: ReturnType<typeof createServiceClient>) {
-  const { data: jobs, error: jobsError } = await supabase
+  const { data: candidates, error: candidatesError } = await supabase
     .from("jobs")
-    .select("id, payload")
+    .select("id")
     .eq("type", "process_item")
     .eq("status", "queued")
     .lte("run_after", new Date().toISOString())
     .limit(BULK_PROCESS_LIMIT);
-  if (jobsError || !jobs || jobs.length === 0) return 0;
+  if (candidatesError || !candidates || candidates.length === 0) return 0;
+
+  const { data: jobs, error: claimError } = await supabase
+    .from("jobs")
+    .update({ status: "running", locked_at: new Date().toISOString() })
+    .in("id", candidates.map((c) => c.id))
+    .eq("status", "queued")
+    .select("id, payload");
+  if (claimError || !jobs || jobs.length === 0) return 0;
+
+  const jobIds = jobs.map((j) => j.id);
+  // Bij een fout halverwege: jobs terug naar queued zodat een volgende tick
+  // ze opnieuw probeert (i.p.v. done markeren en items eeuwig 'pending' laten).
+  const requeue = async () => {
+    await supabase.from("jobs").update({ status: "queued", locked_at: null }).in("id", jobIds);
+  };
 
   const rawItemIds = jobs.map((j) => (j.payload as Record<string, unknown>).rawItemId as string);
 
@@ -108,15 +163,10 @@ async function bulkDrainProcessItems(supabase: ReturnType<typeof createServiceCl
     .from("raw_items")
     .select("id, title, body, language, sources(slug)")
     .in("id", rawItemIds);
-  if (rawError || !rawItems) return 0;
-
-  const AJAX_SOURCE_SLUGS = new Set([
-    "ajax-nl", "ajax-supporters", "ajax-freaks", "ajax-showtime", "ajax-daily",
-    "reddit-ajax", "football-oranje",
-    "gnews-telegraaf", "gnews-vi", "gnews-ad", "gnews-volkskrant", "gnews-parool",
-    "gnews-ajax-es", "gnews-ajax-it", "gnews-ajax-de", "gnews-ajax-fr",
-    "gnews-ajax-pt", "gnews-ajax-br", "gnews-ajax-tr",
-  ]);
+  if (rawError || !rawItems) {
+    await requeue();
+    return 0;
+  }
 
   const relevant: string[] = [];
   const skipped: string[] = [];
@@ -140,10 +190,14 @@ async function bulkDrainProcessItems(supabase: ReturnType<typeof createServiceCl
   }
 
   if (skipped.length > 0) {
-    await supabase
+    const { error: skipError } = await supabase
       .from("raw_items")
       .update({ processing_status: "skipped" })
       .in("id", skipped);
+    if (skipError) {
+      await requeue();
+      return 0;
+    }
   }
 
   const newJobs: { type: string; payload: Record<string, string> }[] = [
@@ -151,10 +205,13 @@ async function bulkDrainProcessItems(supabase: ReturnType<typeof createServiceCl
     ...translateIds.map((id) => ({ type: "translate", payload: { rawItemId: id } })),
   ];
   if (newJobs.length > 0) {
-    await supabase.from("jobs").insert(newJobs);
+    const { error: insertError } = await supabase.from("jobs").insert(newJobs);
+    if (insertError) {
+      await requeue();
+      return 0;
+    }
   }
 
-  const jobIds = jobs.map((j) => j.id);
   await supabase.from("jobs").update({ status: "done" }).in("id", jobIds);
 
   return jobs.length;

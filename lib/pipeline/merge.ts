@@ -11,14 +11,22 @@ const MAX_CANDIDATES = 20;
  * topic start, schrijft het resultaat weg (topics/topic_items) en herberekent
  * de confidence. Kandidaten worden vernauwd op tijdvenster (geen embeddings —
  * dat is Fase 2).
+ *
+ * Idempotent bij retries: al-verwerkte items worden overgeslagen, een eerder
+ * (bij een deels mislukte run) aangemaakt topic wordt via de deterministische
+ * slug hergebruikt, en topic_items-duplicaten worden genegeerd.
  */
 export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error: rawItemError } = await supabase
     .from("raw_items")
-    .select("id, source_id, title, body, published_at, sources(name, tier)")
+    .select("id, source_id, title, body, published_at, processing_status, topic_id, sources(name, tier)")
     .eq("id", rawItemId)
     .single();
   if (rawItemError) throw rawItemError;
+
+  if (rawItem.processing_status === "processed" && rawItem.topic_id) {
+    return { topicId: rawItem.topic_id, isNewTopic: false };
+  }
 
   const since = new Date(Date.now() - CANDIDATE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data: candidateRows, error: candidatesError } = await supabase
@@ -44,14 +52,22 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
     candidates,
   });
 
-  let topicId = result.matchedTopicId;
+  // Claude kan een topic-id teruggeven dat niet in de kandidatenlijst stond
+  // (hallucinatie); dan zou de FK op topic_items falen. Behandel als nieuw topic.
+  const matchedTopicId =
+    result.matchedTopicId && candidates.some((c) => c.id === result.matchedTopicId)
+      ? result.matchedTopicId
+      : null;
+
+  let topicId = matchedTopicId;
   const reportedAt = rawItem.published_at ?? new Date().toISOString();
 
   if (!topicId) {
+    const slug = `${slugify(result.newTopicTitle ?? rawItem.title)}-${rawItem.id.slice(0, 8)}`;
     const { data: newTopic, error: newTopicError } = await supabase
       .from("topics")
       .insert({
-        slug: `${slugify(result.newTopicTitle ?? rawItem.title)}-${rawItem.id.slice(0, 8)}`,
+        slug,
         title: result.newTopicTitle ?? rawItem.title,
         category: result.category,
         confidence: confidenceForTier(sourceTier),
@@ -62,8 +78,23 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
       })
       .select("id")
       .single();
-    if (newTopicError) throw newTopicError;
-    topicId = newTopic.id;
+    if (newTopicError) {
+      // 23505 = unique violation op slug: een eerdere (deels mislukte) run
+      // maakte dit topic al aan — hergebruik het i.p.v. eeuwig te blijven falen.
+      if (newTopicError.code === "23505") {
+        const { data: existingTopic, error: existingError } = await supabase
+          .from("topics")
+          .select("id")
+          .eq("slug", slug)
+          .single();
+        if (existingError) throw existingError;
+        topicId = existingTopic.id;
+      } else {
+        throw newTopicError;
+      }
+    } else {
+      topicId = newTopic.id;
+    }
   }
 
   // confidence_at = de betrouwbaarheid van het topic ná het toevoegen van dit
@@ -83,15 +114,18 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
   const bestTier = Math.min(...tiers) as SourceTier; // tier 1 = meest betrouwbaar
   const confidenceAt = confidenceForTier(bestTier);
 
-  const { error: topicItemError } = await supabase.from("topic_items").insert({
-    topic_id: topicId,
-    raw_item_id: rawItem.id,
-    source_id: rawItem.source_id,
-    reported_at: reportedAt,
-    snippet: result.snippet,
-    contribution: result.contribution,
-    confidence_at: confidenceAt,
-  });
+  const { error: topicItemError } = await supabase.from("topic_items").upsert(
+    {
+      topic_id: topicId,
+      raw_item_id: rawItem.id,
+      source_id: rawItem.source_id,
+      reported_at: reportedAt,
+      snippet: result.snippet,
+      contribution: result.contribution,
+      confidence_at: confidenceAt,
+    },
+    { onConflict: "topic_id,raw_item_id", ignoreDuplicates: true }
+  );
   if (topicItemError) throw topicItemError;
 
   await supabase
@@ -103,9 +137,20 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
 
   // Nieuwe topics krijgen hun samenvatting direct uit de merge-call hierboven;
   // bestaande topics hebben een herberekening over de volledige tijdlijn nodig.
-  if (result.matchedTopicId) {
-    await supabase.from("jobs").insert({ type: "summarize", payload: { topicId } });
+  // Dedup: één queued summarize-job per topic is genoeg.
+  if (matchedTopicId) {
+    const { data: pendingSummarize } = await supabase
+      .from("jobs")
+      .select("id")
+      .eq("type", "summarize")
+      .eq("status", "queued")
+      .contains("payload", { topicId })
+      .limit(1)
+      .maybeSingle();
+    if (!pendingSummarize) {
+      await supabase.from("jobs").insert({ type: "summarize", payload: { topicId } });
+    }
   }
 
-  return { topicId, isNewTopic: !result.matchedTopicId };
+  return { topicId, isNewTopic: !matchedTopicId };
 }

@@ -10,8 +10,25 @@ const parser = new Parser({
   timeout: 8000,
 });
 
-function externalIdFor(item: { guid?: string; link?: string; title?: string }): string {
-  return item.guid || item.link || item.title || crypto.randomUUID();
+/**
+ * Stabiele dedup-sleutel. Items zonder guid, link én titel worden overgeslagen:
+ * een random fallback zou de unique-constraint omzeilen en hetzelfde item bij
+ * elke fetch opnieuw binnenhalen.
+ */
+function externalIdFor(item: { guid?: string; link?: string; title?: string }): string | null {
+  return item.guid || item.link || item.title || null;
+}
+
+/**
+ * Google News-titels eindigen op " - Publicatienaam". Strippen zorgt dat
+ * dezelfde kop via gnews en via de directe feed niet als twee verschillende
+ * verhalen bij de merge belandt.
+ */
+function cleanTitle(title: string, source: Source): string {
+  if (source.feed_url?.includes("news.google.com")) {
+    return title.replace(/\s+-\s+[^-]+$/, "").trim() || title;
+  }
+  return title;
 }
 
 /**
@@ -36,15 +53,19 @@ export async function fetchRssSource(supabase: SupabaseClient, source: Source) {
     throw err;
   }
 
-  const rows = feed.items.map((item) => ({
-    source_id: source.id,
-    external_id: externalIdFor(item),
-    url: item.link ?? source.url,
-    title: item.title ?? "(geen titel)",
-    body: item.contentSnippet ?? item.content ?? null,
-    published_at: item.isoDate ?? null,
-    language: source.language,
-  }));
+  const rows = feed.items.flatMap((item) => {
+    const externalId = externalIdFor(item);
+    if (!externalId) return [];
+    return [{
+      source_id: source.id,
+      external_id: externalId,
+      url: item.link ?? source.url,
+      title: cleanTitle(item.title ?? "(geen titel)", source),
+      body: item.contentSnippet ?? item.content ?? null,
+      published_at: item.isoDate ?? null,
+      language: source.language,
+    }];
+  });
 
   if (rows.length === 0) {
     await supabase
@@ -75,7 +96,7 @@ export async function fetchRssSource(supabase: SupabaseClient, source: Source) {
 
   await supabase
     .from("sources")
-    .update({ last_fetched_at: new Date().toISOString(), last_status: "ok" })
+    .update({ last_fetched_at: new Date().toISOString(), last_status: `ok (${insertedRows?.length ?? 0} nieuw)` })
     .eq("id", source.id);
 
   return { inserted: insertedRows?.length ?? 0 };
