@@ -12,6 +12,9 @@ export const maxDuration = 60;
 const BUDGET_MS = 8000;
 const FETCH_INTERVAL_MINUTES = 15;
 const BULK_PROCESS_LIMIT = 200;
+// Jobs zijn I/O-bound (Claude-call of feed-fetch); een paar parallel verwerken
+// vermenigvuldigt de doorvoer per invocatie zonder rate-limits te raken.
+const JOB_CONCURRENCY = 3;
 const STALE_RUNNING_MINUTES = 10;
 const DONE_JOB_RETENTION_DAYS = 7;
 
@@ -33,16 +36,21 @@ export async function POST(request: Request) {
 
   let processed = 0;
   while (Date.now() - start < BUDGET_MS) {
-    const { data: claimed, error } = await supabase.rpc("claim_next_job");
-    if (error) {
-      console.error("claim_next_job faalde:", error);
-      break;
+    const batch: Job[] = [];
+    while (batch.length < JOB_CONCURRENCY) {
+      const { data: claimed, error } = await supabase.rpc("claim_next_job");
+      if (error) {
+        console.error("claim_next_job faalde:", error);
+        break;
+      }
+      const job = (claimed as Job[] | null)?.[0];
+      if (!job) break;
+      batch.push(job);
     }
-    const job = (claimed as Job[] | null)?.[0];
-    if (!job) break;
+    if (batch.length === 0) break;
 
-    await processJob(supabase, job);
-    processed++;
+    await Promise.all(batch.map((job) => processJob(supabase, job)));
+    processed += batch.length;
   }
 
   const { count: remaining } = await supabase
