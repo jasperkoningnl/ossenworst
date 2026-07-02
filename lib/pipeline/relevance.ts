@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { eersteElftal, jongAjax } from "@/lib/mock/players";
 
-const AJAX_SOURCE_SLUGS = new Set([
+/**
+ * Bronnen die per definitie Ajax-gerelateerd zijn (eigen fansites + gnews-
+ * queries die al op "Ajax" filteren). Items hiervan slaan de keyword-check over.
+ */
+export const AJAX_SOURCE_SLUGS = new Set([
   "ajax-nl",
   "ajax-supporters",
   "ajax-freaks",
@@ -23,22 +27,49 @@ const AJAX_SOURCE_SLUGS = new Set([
   "gnews-ajax-tr",
 ]);
 
-const KEYWORDS = [
+const CLUB_KEYWORDS = [
   "ajax",
-  "afc ajax",
-  "ajax amsterdam",
+  "аякс", // Russische bronnen (Sport-Express, Sports.ru) schrijven Ajax in Cyrillisch
   "johan cruijff arena",
   "johan cruyff arena",
   "de toekomst",
   "eredivisie",
   "knvb beker",
-  ...eersteElftal.map((p) => p.name.split(" ").slice(-1)[0]),
-  ...jongAjax.map((p) => p.name.split(" ").slice(-1)[0]),
-].map((k) => k.toLowerCase());
+];
+
+/**
+ * Achternamen die ook gewone woorden of veelvoorkomende namen zijn (baas, haan,
+ * steur; Taylor/Traoré dragen ook andere voetballers). Die matchen alleen als
+ * volledige naam, anders vist het filter half niet-Ajax-nieuws binnen.
+ */
+const AMBIGUOUS_SURNAMES = new Set(["baas", "haan", "steur", "taylor", "traore"]);
+
+/** lowercase + diacritics strippen, zodat "Šutalo" ook "sutalo" matcht (en andersom). */
+function normalize(text: string): string {
+  return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const PLAYER_KEYWORDS = [...eersteElftal, ...jongAjax].flatMap((p) => {
+  const fullName = normalize(p.name);
+  const surname = fullName.split(" ").slice(-1)[0];
+  return AMBIGUOUS_SURNAMES.has(surname) ? [fullName] : [fullName, surname];
+});
+
+// Unicode-bewuste "woordgrenzen" i.p.v. \b: \b werkt niet rond niet-ASCII
+// letters (Cyrillisch, letters met diacritics), substring-match ving juist
+// te veel ("baas" in "wielrenbaas").
+const KEYWORD_PATTERNS = [...CLUB_KEYWORDS.map(normalize), ...PLAYER_KEYWORDS].map(
+  (keyword) =>
+    new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(keyword)}(?![\\p{L}\\p{N}])`, "u")
+);
 
 export function isRelevant(title: string, body: string | null): boolean {
-  const text = `${title} ${body ?? ""}`.toLowerCase();
-  return KEYWORDS.some((keyword) => text.includes(keyword));
+  const text = normalize(`${title} ${body ?? ""}`);
+  return KEYWORD_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 export async function processRawItem(supabase: SupabaseClient, rawItemId: string) {
