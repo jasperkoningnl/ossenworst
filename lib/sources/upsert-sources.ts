@@ -20,6 +20,7 @@ export async function upsertSources(supabase: SupabaseClient) {
     language: seed.language,
     fetch_method: seed.fetchMethod,
     feed_url: seed.feedUrl,
+    scrape_config: seed.scrapeConfig ?? null,
     enabled: enabledBySlug.get(seed.slug) ?? seed.enabled,
   }));
 

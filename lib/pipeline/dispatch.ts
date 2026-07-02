@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Job } from "@/lib/types/database";
 import { fetchRssSource } from "./fetchers/rss";
+import { fetchScrapeSource } from "./fetchers/scrape";
 import { processRawItem } from "./relevance";
 import { mergeRawItem } from "./merge";
 import { summarizeTopicJob } from "./summarize";
@@ -18,7 +19,11 @@ export async function processJob(supabase: SupabaseClient, job: Job) {
           .eq("id", job.payload.sourceId as string)
           .single();
         if (error) throw error;
-        await fetchRssSource(supabase, source);
+        if (source.fetch_method === "scrape") {
+          await fetchScrapeSource(supabase, source);
+        } else {
+          await fetchRssSource(supabase, source);
+        }
         break;
       }
       case "process_item":
