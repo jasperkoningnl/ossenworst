@@ -1,18 +1,13 @@
 import { NextResponse, after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { processJob } from "@/lib/pipeline/dispatch";
+import { isRelevant } from "@/lib/pipeline/relevance";
 import type { Job } from "@/lib/types/database";
 
 const BUDGET_MS = 8000;
 const FETCH_INTERVAL_MINUTES = 15;
+const BULK_PROCESS_LIMIT = 200;
 
-/**
- * Enqueue + drain in één invocatie, getriggerd door een GitHub Action op een
- * schedule (Vercel Cron op Hobby draait maar 1x/dag — te traag hiervoor, zie
- * .github/workflows/pipeline-tick.yml). Blijft ruim binnen de Vercel
- * 10s-limiet door na het tijdsbudget een self-chaining tick te vuren via
- * next/server's `after()` i.p.v. door te blijven verwerken.
- */
 export async function POST(request: Request) {
   const expected = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
@@ -24,7 +19,8 @@ export async function POST(request: Request) {
   const start = Date.now();
 
   await enqueueDueFetches(supabase);
-  await requeueStuckItems(supabase);
+
+  const bulkProcessed = await bulkDrainProcessItems(supabase);
 
   let processed = 0;
   while (Date.now() - start < BUDGET_MS) {
@@ -60,17 +56,9 @@ export async function POST(request: Request) {
     });
   }
 
-  return NextResponse.json({ ok: true, processed, remaining: remaining ?? 0 });
+  return NextResponse.json({ ok: true, processed, bulkProcessed, remaining: remaining ?? 0 });
 }
 
-/**
- * Enqueued fetch_source-jobs voor bronnen die aan de beurt zijn. Houdt geen
- * rekening met al-wachtende fetch_source-jobs voor dezelfde bron (die zouden
- * pas verdwijnen als last_fetched_at bijgewerkt is, wat pas ná verwerking
- * gebeurt) — bij een grote achterstand + snel self-chainen kan dit dezelfde
- * bron dubbel enqueuen. Onschadelijk dankzij de dedup op raw_items, en bij
- * het huidige aantal bronnen verwaarloosbaar; geen extra complexiteit waard.
- */
 async function enqueueDueFetches(supabase: ReturnType<typeof createServiceClient>) {
   const cutoff = new Date(Date.now() - FETCH_INTERVAL_MINUTES * 60 * 1000).toISOString();
   const { data: dueSources, error } = await supabase
@@ -79,45 +67,95 @@ async function enqueueDueFetches(supabase: ReturnType<typeof createServiceClient
     .eq("enabled", true)
     .or(`last_fetched_at.is.null,last_fetched_at.lt.${cutoff}`);
   if (error) throw error;
+  if (!dueSources || dueSources.length === 0) return;
 
-  if (dueSources && dueSources.length > 0) {
+  const { data: alreadyQueued } = await supabase
+    .from("jobs")
+    .select("payload")
+    .eq("type", "fetch_source")
+    .in("status", ["queued", "running"]);
+
+  const queuedSourceIds = new Set(
+    (alreadyQueued ?? []).map((j) => (j.payload as Record<string, unknown>)?.sourceId as string)
+  );
+
+  const newSources = dueSources.filter((s) => !queuedSourceIds.has(s.id));
+  if (newSources.length > 0) {
     await supabase
       .from("jobs")
-      .insert(dueSources.map((s) => ({ type: "fetch_source", payload: { sourceId: s.id } })));
+      .insert(newSources.map((s) => ({ type: "fetch_source", payload: { sourceId: s.id } })));
   }
 }
 
 /**
- * Vindt raw_items die op `pending` staan maar waarvoor geen actief job meer
- * bestaat (bv. omdat de process_item/translate/merge-jobs het max aantal
- * pogingen hebben bereikt). Queue ze opnieuw als `process_item`.
+ * Verwerkt process_item-jobs in bulk zonder de claim-queue. Dit is puur een
+ * keyword-check — geen externe API nodig — en kan honderden items per seconde
+ * aan i.p.v. de ~6/tick die de normale queue haalt.
  */
-async function requeueStuckItems(supabase: ReturnType<typeof createServiceClient>) {
-  const { data: stuckItems, error } = await supabase
+async function bulkDrainProcessItems(supabase: ReturnType<typeof createServiceClient>) {
+  const { data: jobs, error: jobsError } = await supabase
+    .from("jobs")
+    .select("id, payload")
+    .eq("type", "process_item")
+    .eq("status", "queued")
+    .lte("run_after", new Date().toISOString())
+    .limit(BULK_PROCESS_LIMIT);
+  if (jobsError || !jobs || jobs.length === 0) return 0;
+
+  const rawItemIds = jobs.map((j) => (j.payload as Record<string, unknown>).rawItemId as string);
+
+  const { data: rawItems, error: rawError } = await supabase
     .from("raw_items")
-    .select("id")
-    .eq("processing_status", "pending")
-    .limit(50);
-  if (error || !stuckItems || stuckItems.length === 0) return;
+    .select("id, title, body, language, sources(slug)")
+    .in("id", rawItemIds);
+  if (rawError || !rawItems) return 0;
 
-  const stuckIds = stuckItems.map((r) => r.id);
+  const AJAX_SOURCE_SLUGS = new Set([
+    "ajax-nl", "ajax-supporters", "ajax-freaks", "ajax-showtime", "ajax-daily",
+    "reddit-ajax", "football-oranje",
+    "gnews-telegraaf", "gnews-vi", "gnews-ad", "gnews-volkskrant", "gnews-parool",
+    "gnews-ajax-es", "gnews-ajax-it", "gnews-ajax-de", "gnews-ajax-fr",
+    "gnews-ajax-pt", "gnews-ajax-br", "gnews-ajax-tr",
+  ]);
 
-  const { data: activeJobs } = await supabase
-    .from("jobs")
-    .select("payload")
-    .in("status", ["queued", "running"])
-    .in("type", ["process_item", "translate", "merge"]);
+  const relevant: string[] = [];
+  const skipped: string[] = [];
+  const translateIds: string[] = [];
+  const mergeIds: string[] = [];
 
-  const activeRawItemIds = new Set(
-    (activeJobs ?? [])
-      .map((j) => (j.payload as Record<string, unknown>)?.rawItemId as string)
-      .filter(Boolean)
-  );
+  for (const item of rawItems) {
+    const source = item.sources as unknown as { slug: string } | null;
+    const isAjaxSource = source?.slug ? AJAX_SOURCE_SLUGS.has(source.slug) : false;
 
-  const orphaned = stuckIds.filter((id) => !activeRawItemIds.has(id));
-  if (orphaned.length === 0) return;
+    if (!isAjaxSource && !isRelevant(item.title, item.body)) {
+      skipped.push(item.id);
+    } else {
+      relevant.push(item.id);
+      if (item.language !== "nl") {
+        translateIds.push(item.id);
+      } else {
+        mergeIds.push(item.id);
+      }
+    }
+  }
 
-  await supabase
-    .from("jobs")
-    .insert(orphaned.map((id) => ({ type: "process_item", payload: { rawItemId: id } })));
+  if (skipped.length > 0) {
+    await supabase
+      .from("raw_items")
+      .update({ processing_status: "skipped" })
+      .in("id", skipped);
+  }
+
+  const newJobs: { type: string; payload: Record<string, string> }[] = [
+    ...mergeIds.map((id) => ({ type: "merge", payload: { rawItemId: id } })),
+    ...translateIds.map((id) => ({ type: "translate", payload: { rawItemId: id } })),
+  ];
+  if (newJobs.length > 0) {
+    await supabase.from("jobs").insert(newJobs);
+  }
+
+  const jobIds = jobs.map((j) => j.id);
+  await supabase.from("jobs").update({ status: "done" }).in("id", jobIds);
+
+  return jobs.length;
 }
