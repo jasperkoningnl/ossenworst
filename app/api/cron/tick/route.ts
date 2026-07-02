@@ -24,6 +24,7 @@ export async function POST(request: Request) {
   const start = Date.now();
 
   await enqueueDueFetches(supabase);
+  await requeueStuckItems(supabase);
 
   let processed = 0;
   while (Date.now() - start < BUDGET_MS) {
@@ -84,4 +85,39 @@ async function enqueueDueFetches(supabase: ReturnType<typeof createServiceClient
       .from("jobs")
       .insert(dueSources.map((s) => ({ type: "fetch_source", payload: { sourceId: s.id } })));
   }
+}
+
+/**
+ * Vindt raw_items die op `pending` staan maar waarvoor geen actief job meer
+ * bestaat (bv. omdat de process_item/translate/merge-jobs het max aantal
+ * pogingen hebben bereikt). Queue ze opnieuw als `process_item`.
+ */
+async function requeueStuckItems(supabase: ReturnType<typeof createServiceClient>) {
+  const { data: stuckItems, error } = await supabase
+    .from("raw_items")
+    .select("id")
+    .eq("processing_status", "pending")
+    .limit(50);
+  if (error || !stuckItems || stuckItems.length === 0) return;
+
+  const stuckIds = stuckItems.map((r) => r.id);
+
+  const { data: activeJobs } = await supabase
+    .from("jobs")
+    .select("payload")
+    .in("status", ["queued", "running"])
+    .in("type", ["process_item", "translate", "merge"]);
+
+  const activeRawItemIds = new Set(
+    (activeJobs ?? [])
+      .map((j) => (j.payload as Record<string, unknown>)?.rawItemId as string)
+      .filter(Boolean)
+  );
+
+  const orphaned = stuckIds.filter((id) => !activeRawItemIds.has(id));
+  if (orphaned.length === 0) return;
+
+  await supabase
+    .from("jobs")
+    .insert(orphaned.map((id) => ({ type: "process_item", payload: { rawItemId: id } })));
 }
