@@ -26,22 +26,29 @@ export async function translateRawItem(supabase: SupabaseClient, rawItemId: stri
     .single();
   if (error) throw error;
 
-  const result = await translateToNl(rawItem.title, rawItem.body, rawItem.language);
+  let translated = false;
+  try {
+    const result = await translateToNl(rawItem.title, rawItem.body, rawItem.language);
 
-  await supabase.from("translations").insert({
-    raw_item_id: rawItemId,
-    target_lang: "nl",
-    translated_title: result.translatedTitle,
-    translated_body: result.translatedBody,
-    model: "claude-haiku-4-5-20251001",
-  });
+    await supabase.from("translations").insert({
+      raw_item_id: rawItemId,
+      target_lang: "nl",
+      translated_title: result.translatedTitle,
+      translated_body: result.translatedBody,
+      model: "claude-haiku-4-5-20251001",
+    });
 
-  await supabase
-    .from("raw_items")
-    .update({ title: result.translatedTitle, body: result.translatedBody })
-    .eq("id", rawItemId);
+    await supabase
+      .from("raw_items")
+      .update({ title: result.translatedTitle, body: result.translatedBody })
+      .eq("id", rawItemId);
+
+    translated = true;
+  } catch (err) {
+    console.error(`Vertaling mislukt voor ${rawItemId}, ga door met originele tekst:`, err);
+  }
 
   await supabase.from("jobs").insert({ type: "merge", payload: { rawItemId } });
 
-  return { cached: false };
+  return { cached: false, translated };
 }

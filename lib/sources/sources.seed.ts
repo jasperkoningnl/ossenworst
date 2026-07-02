@@ -146,7 +146,7 @@ export const sourceSeeds: SourceSeed[] = [
   { name: "Transfermarkt Datasets (GitHub)", slug: "transfermarkt-datasets", url: "https://github.com/dcaribou/transfermarkt-datasets", tier: 2, country: "GLOBAL", language: "en", fetchMethod: "api", feedUrl: null, enabled: false },
 
   // --- Google News RSS (paywall-proxy + internationaal vangnet) ---
-  { name: "Google News: Telegraaf Ajax", slug: "gnews-telegraaf", url: "https://www.telegraaf.nl", tier: 1, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://news.google.com/rss/search?q=site:telegraaf.nl+Ajax&hl=nl&gl=NL&ceid=NL:nl", enabled: true },
+  { name: "Google News: Telegraaf Ajax", slug: "gnews-telegraaf", url: "https://www.telegraaf.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://news.google.com/rss/search?q=site:telegraaf.nl+Ajax&hl=nl&gl=NL&ceid=NL:nl", enabled: true },
   { name: "Google News: VI Ajax", slug: "gnews-vi", url: "https://www.vi.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://news.google.com/rss/search?q=site:vi.nl+Ajax&hl=nl&gl=NL&ceid=NL:nl", enabled: true },
   { name: "Google News: AD Ajax", slug: "gnews-ad", url: "https://www.ad.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://news.google.com/rss/search?q=site:ad.nl+Ajax&hl=nl&gl=NL&ceid=NL:nl", enabled: true },
   { name: "Google News: Volkskrant Ajax", slug: "gnews-volkskrant", url: "https://www.volkskrant.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://news.google.com/rss/search?q=site:volkskrant.nl+Ajax&hl=nl&gl=NL&ceid=NL:nl", enabled: true },

@@ -1,14 +1,37 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { eersteElftal, jongAjax } from "@/lib/mock/players";
 
-/**
- * Goedkope relevance-gate zonder Claude: clubnaam + achternamen van de
- * huidige selectie (hergebruikt uit lib/mock/players.ts i.p.v. een aparte
- * lijst). Fase 3 vervangt dit door een live squad-sync; deze lijst is dan
- * ook meteen bijgewerkt.
- */
+const AJAX_SOURCE_SLUGS = new Set([
+  "ajax-nl",
+  "ajax-supporters",
+  "ajax-freaks",
+  "ajax-showtime",
+  "ajax-daily",
+  "reddit-ajax",
+  "football-oranje",
+  "gnews-telegraaf",
+  "gnews-vi",
+  "gnews-ad",
+  "gnews-volkskrant",
+  "gnews-parool",
+  "gnews-ajax-es",
+  "gnews-ajax-it",
+  "gnews-ajax-de",
+  "gnews-ajax-fr",
+  "gnews-ajax-pt",
+  "gnews-ajax-br",
+  "gnews-ajax-tr",
+]);
+
 const KEYWORDS = [
   "ajax",
+  "afc ajax",
+  "ajax amsterdam",
+  "johan cruijff arena",
+  "johan cruyff arena",
+  "de toekomst",
+  "eredivisie",
+  "knvb beker",
   ...eersteElftal.map((p) => p.name.split(" ").slice(-1)[0]),
   ...jongAjax.map((p) => p.name.split(" ").slice(-1)[0]),
 ].map((k) => k.toLowerCase());
@@ -18,16 +41,18 @@ export function isRelevant(title: string, body: string | null): boolean {
   return KEYWORDS.some((keyword) => text.includes(keyword));
 }
 
-/** Bepaalt relevantie van een raw_item en routeert naar translate (niet-NL) of merge (NL). */
 export async function processRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error } = await supabase
     .from("raw_items")
-    .select("title, body, language")
+    .select("title, body, language, sources(slug)")
     .eq("id", rawItemId)
     .single();
   if (error) throw error;
 
-  if (!isRelevant(rawItem.title, rawItem.body)) {
+  const source = rawItem.sources as unknown as { slug: string } | null;
+  const isAjaxSource = source?.slug ? AJAX_SOURCE_SLUGS.has(source.slug) : false;
+
+  if (!isAjaxSource && !isRelevant(rawItem.title, rawItem.body)) {
     await supabase.from("raw_items").update({ processing_status: "skipped" }).eq("id", rawItemId);
     return { relevant: false };
   }
