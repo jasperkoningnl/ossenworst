@@ -63,6 +63,10 @@ workflow* toont in de run-samenvatting de queue-diepte per jobtype, mislukte
 jobs, falende bronnen en de nieuwste topics (via `GET
 /api/admin/pipeline-status`, beveiligd met `ADMIN_SECRET`).
 
+**Topics opschonen:** workflow **"Cleanup topics"** laat Claude alle bestaande
+topics beoordelen en verwijdert de topics zonder Ajax-connectie (wedtips,
+algemeen voetbalnieuws, niet-voetbal) — handig na filterwijzigingen.
+
 **Eenmalige setup** (naast wat je al deed voor bronnen seeden):
 1. Zet `CRON_SECRET` in Vercel op een willekeurige, geheime waarde (staat al in
    `.env.example`).

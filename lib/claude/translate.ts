@@ -1,6 +1,6 @@
-import { getClaudeClient } from "./client";
+import { getClaudeClient, CLAUDE_MODEL_CHEAP } from "./client";
 
-export const TRANSLATE_MODEL = "claude-haiku-4-5-20251001";
+export const TRANSLATE_MODEL = CLAUDE_MODEL_CHEAP;
 
 export interface TranslationResult {
   translatedTitle: string;

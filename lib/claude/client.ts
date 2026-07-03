@@ -12,3 +12,6 @@ export function getClaudeClient() {
 
 /** Kwaliteit/kosten-balans voor merge/samenvatting in Fase 1 (MVP-budget). */
 export const CLAUDE_MODEL = "claude-sonnet-5";
+
+/** Goedkoop/snel model voor bulk-taken: vertaling, relevantie-opschoning. */
+export const CLAUDE_MODEL_CHEAP = "claude-haiku-4-5-20251001";

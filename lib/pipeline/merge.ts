@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mergeAndClassify, type MergeCandidate } from "@/lib/claude/merge";
+import { isRelevant, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
 import { confidenceForTier, type SourceTier } from "@/lib/types/enums";
 import { slugify } from "@/lib/utils/slug";
 
@@ -19,13 +20,22 @@ const MAX_CANDIDATES = 20;
 export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error: rawItemError } = await supabase
     .from("raw_items")
-    .select("id, source_id, title, body, published_at, processing_status, topic_id, sources(name, tier)")
+    .select("id, source_id, title, body, published_at, processing_status, topic_id, sources(name, tier, slug)")
     .eq("id", rawItemId)
     .single();
   if (rawItemError) throw rawItemError;
 
   if (rawItem.processing_status === "processed" && rawItem.topic_id) {
     return { topicId: rawItem.topic_id, isNewTopic: false };
+  }
+
+  // Goedkope her-check vóór de Claude-call: vangt jobs die enqueued zijn toen
+  // het relevantiefilter nog ruimer stond (bv. gnews op de whitelist).
+  const sourceForGate = rawItem.sources as unknown as { slug?: string } | null;
+  const isAjaxSource = sourceForGate?.slug ? AJAX_SOURCE_SLUGS.has(sourceForGate.slug) : false;
+  if (!isAjaxSource && !isRelevant(rawItem.title, rawItem.body)) {
+    await supabase.from("raw_items").update({ processing_status: "skipped" }).eq("id", rawItemId);
+    return { topicId: null, isNewTopic: false, skipped: true };
   }
 
   const since = new Date(Date.now() - CANDIDATE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
@@ -51,6 +61,13 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
     sourceTier,
     candidates,
   });
+
+  // Claude's inhoudelijke oordeel: geen Ajax-connectie (wedtips, algemeen
+  // voetbalnieuws, niet-voetbal) → skippen i.p.v. een topic maken.
+  if (!result.isRelevant) {
+    await supabase.from("raw_items").update({ processing_status: "skipped" }).eq("id", rawItemId);
+    return { topicId: null, isNewTopic: false, skipped: true };
+  }
 
   // Claude kan een topic-id teruggeven dat niet in de kandidatenlijst stond
   // (hallucinatie); dan zou de FK op topic_items falen. Behandel als nieuw topic.

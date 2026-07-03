@@ -2,8 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { eersteElftal, jongAjax } from "@/lib/mock/players";
 
 /**
- * Bronnen die per definitie Ajax-gerelateerd zijn (eigen fansites + gnews-
- * queries die al op "Ajax" filteren). Items hiervan slaan de keyword-check over.
+ * Bronnen die per definitie over Ajax gaan (club- en fansites); alleen items
+ * hiervan slaan de keyword-check over. Google News-queries horen hier bewust
+ * NIET bij: die matchen losjes en leveren ook artikelen zonder Ajax-connectie
+ * (gokpromoties, regionaal nieuws), dus die gaan gewoon door het filter.
  */
 export const AJAX_SOURCE_SLUGS = new Set([
   "ajax-nl",
@@ -12,29 +14,17 @@ export const AJAX_SOURCE_SLUGS = new Set([
   "ajax-showtime",
   "ajax-daily",
   "reddit-ajax",
-  "football-oranje",
-  "gnews-telegraaf",
-  "gnews-vi",
-  "gnews-ad",
-  "gnews-volkskrant",
-  "gnews-parool",
-  "gnews-ajax-es",
-  "gnews-ajax-it",
-  "gnews-ajax-de",
-  "gnews-ajax-fr",
-  "gnews-ajax-pt",
-  "gnews-ajax-br",
-  "gnews-ajax-tr",
 ]);
 
+// Bewust géén losse "eredivisie"/"knvb beker": die keywords lieten al het
+// generieke competitienieuws door, terwijl artikelen die Ajax raken vrijwel
+// altijd "Ajax" of een spelersnaam bevatten.
 const CLUB_KEYWORDS = [
   "ajax",
   "аякс", // Russische bronnen (Sport-Express, Sports.ru) schrijven Ajax in Cyrillisch
   "johan cruijff arena",
   "johan cruyff arena",
   "de toekomst",
-  "eredivisie",
-  "knvb beker",
 ];
 
 /**

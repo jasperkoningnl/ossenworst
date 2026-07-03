@@ -1,0 +1,27 @@
+name: Cleanup topics
+
+# Handmatig te starten: laat Claude alle bestaande topics beoordelen en
+# verwijdert de topics zonder Ajax-connectie (wedtips, algemeen voetbalnieuws,
+# niet-voetbal). Resultaat verschijnt in de run-samenvatting.
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ruim niet-Ajax-topics op
+        run: |
+          RESPONSE=$(curl -sf --max-time 300 -X POST "${{ vars.APP_URL }}/api/admin/cleanup-topics" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+          echo "$RESPONSE" | jq .
+          {
+            echo "## Cleanup topics"
+            echo ""
+            echo "Gecontroleerd: $(echo "$RESPONSE" | jq -r '.checked') — verwijderd: $(echo "$RESPONSE" | jq -r '.removed')"
+            echo ""
+            echo "### Verwijderde topics"
+            echo '```'
+            echo "$RESPONSE" | jq -r 'if (.removedTitles | length) == 0 then "geen" else .removedTitles[] end'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
