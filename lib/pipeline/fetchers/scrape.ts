@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Source } from "@/lib/types/database";
+import { isTooOld } from "@/lib/pipeline/relevance";
 
 export interface ScrapeConfig {
   listUrl: string;
@@ -104,7 +105,10 @@ export async function fetchScrapeSource(
     throw err;
   }
 
-  const articles = extractArticles(html, config, config.listUrl);
+  // Archiefpagina's kunnen oude artikelen tonen; alleen actuele items ingesten.
+  const articles = extractArticles(html, config, config.listUrl).filter(
+    (a) => !isTooOld(a.published_at)
+  );
 
   if (articles.length === 0) {
     await supabase

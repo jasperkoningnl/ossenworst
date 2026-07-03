@@ -32,18 +32,25 @@ export const CONFIDENCE_COLOR: Record<ConfidenceLevel, string> = {
   PRAATPROGRAMMA: "var(--fg-label)",
 };
 
-/** NL-weergavelabels voor betrouwbaarheid (de enum-namen zijn systeemtaal). */
+/**
+ * NL-weergavelabels voor betrouwbaarheid (de enum-namen zijn systeemtaal).
+ * "PRAATPROGRAMMA" is backend-jargon en heet in de UI "Onbevestigd".
+ */
 export const CONFIDENCE_LABEL: Record<ConfidenceLevel, string> = {
   BEVESTIGD: "Bevestigd",
   GERUCHT: "Gerucht",
-  PRAATPROGRAMMA: "Praatprogramma",
+  PRAATPROGRAMMA: "Onbevestigd",
 };
 
-/** Bron-tier badge-kleuren (achtergrond/voorgrond), licht-thema-vriendelijk. */
-export function sourceTierColors(tier: 1 | 2 | 3) {
-  if (tier === 1) return { bg: "#e0f2e5", fg: "#166b30" };
-  if (tier === 2) return { bg: "#f6ead0", fg: "#8a5d04" };
-  return { bg: "#eceadf", fg: "var(--fg2)" };
+/**
+ * Betrouwbaarheidsstip per bron-tier: groen (officieel/insider), geel
+ * (regulier medium), grijs (fansite/praatprogramma). Tiers zelf zijn
+ * backend-informatie en worden nooit als label getoond.
+ */
+export function tierDotColor(tier: 1 | 2 | 3): string {
+  if (tier === 1) return "var(--confirmed)";
+  if (tier === 2) return "var(--rumor)";
+  return "var(--fg5)";
 }
 
 /** Positiekleuren: D=doel, V=verdediger, M=middenvelder, A=aanvaller. */

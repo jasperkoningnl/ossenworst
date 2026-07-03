@@ -9,7 +9,8 @@ export interface TopicForReview {
 const REVIEW_TOOL = {
   name: "flag_irrelevant_topics",
   description:
-    "Wijs de topics aan die geen duidelijke connectie met AFC Ajax hebben en dus niet in een Ajax-nieuwsfeed thuishoren.",
+    "Wijs de topics aan die geen duidelijke connectie met AFC Ajax hebben of niet actueel zijn, " +
+    "en dus niet in een Ajax-nieuwsfeed thuishoren.",
   input_schema: {
     type: "object" as const,
     properties: {
@@ -43,10 +44,13 @@ export async function findIrrelevantTopicIds(topics: TopicForReview[]): Promise<
     model: CLAUDE_MODEL,
     max_tokens: 2048,
     system:
-      "Je controleert de topiclijst van Ossenworst Manager, een nieuwsaggregator die uitsluitend over " +
-      "AFC Ajax gaat (club, spelers, staf, transfers, wedstrijden, jeugd). Wijs topics aan die daar " +
-      "duidelijk NIET bij horen: algemeen voetbal-/competitienieuws zonder Ajax-link, gokpromoties en " +
-      "wedtips, en nieuws dat niets met voetbal te maken heeft. Twijfel je, laat het topic dan staan.",
+      "Je controleert de topiclijst van Ossenworst Manager, een nieuwsaggregator die uitsluitend ACTUEEL " +
+      "nieuws over AFC Ajax toont (club, spelers, staf, transfers, wedstrijden, jeugd). Wijs topics aan " +
+      "die daar duidelijk NIET bij horen: algemeen voetbal-/competitienieuws zonder Ajax-link, gokpromoties " +
+      "en wedtips, nieuws dat niets met voetbal te maken heeft, én niet-actueel materiaal zoals " +
+      "terugblikken, jubileum- en 'op deze dag'-stukken, quizzen en topics die primair over wedstrijden of " +
+      "gebeurtenissen van maanden of jaren geleden gaan (bv. een duel uit 2009 of 2018). " +
+      "Twijfel je, laat het topic dan staan.",
     tools: [REVIEW_TOOL],
     tool_choice: { type: "tool", name: "flag_irrelevant_topics" },
     messages: [{ role: "user", content: `TOPICS:\n${topicList}` }],

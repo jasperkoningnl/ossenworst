@@ -1,7 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { processJob } from "@/lib/pipeline/dispatch";
-import { isRelevant, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
+import { isRelevant, isTooOld, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
 import type { Job } from "@/lib/types/database";
 
 // Fluid compute staat >10s toe; ruime marge zodat een batch die net vóór de
@@ -182,7 +182,7 @@ async function bulkDrainProcessItems(supabase: ReturnType<typeof createServiceCl
 
   const { data: rawItems, error: rawError } = await supabase
     .from("raw_items")
-    .select("id, title, body, language, sources(slug)")
+    .select("id, title, body, language, published_at, sources(slug)")
     .in("id", rawItemIds);
   if (rawError || !rawItems) {
     await requeue();
@@ -198,7 +198,7 @@ async function bulkDrainProcessItems(supabase: ReturnType<typeof createServiceCl
     const source = item.sources as unknown as { slug: string } | null;
     const isAjaxSource = source?.slug ? AJAX_SOURCE_SLUGS.has(source.slug) : false;
 
-    if (!isAjaxSource && !isRelevant(item.title, item.body)) {
+    if (isTooOld(item.published_at) || (!isAjaxSource && !isRelevant(item.title, item.body))) {
       skipped.push(item.id);
     } else {
       relevant.push(item.id);

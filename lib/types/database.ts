@@ -40,6 +40,10 @@ export interface RawItem {
   fetched_at: string;
   processing_status: ProcessingStatus;
   topic_id: string | null;
+  /** Echte publishernaam voor items die via een aggregator (Google News) binnenkwamen. */
+  publisher_name: string | null;
+  /** Gezet zodra de eenmalige verrijking (URL herleiden + artikel-intro ophalen) is gedaan. */
+  enriched_at: string | null;
 }
 
 export interface Topic {

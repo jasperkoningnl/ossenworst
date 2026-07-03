@@ -42,6 +42,8 @@ const MERGE_TOOL = {
         description:
           "false als het artikel geen duidelijke connectie met AFC Ajax heeft: algemeen voetbal-/competitienieuws " +
           "zonder Ajax-link, gokpromoties en wedtips, of nieuws dat niets met voetbal te maken heeft. " +
+          "Ook false voor niet-actueel materiaal: terugblikken, jubileum- en 'op deze dag'-stukken, " +
+          "quizzen en artikelen die primair over wedstrijden of gebeurtenissen van maanden of jaren geleden gaan. " +
           "Bij false mogen de overige velden nominale waarden bevatten.",
       },
       matched_topic_id: {
@@ -98,6 +100,9 @@ export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> 
       "EERST of het artikel een duidelijke connectie met AFC Ajax heeft (club, spelers, staf, transfers, " +
       "wedstrijden of jeugd van Ajax). Geen Ajax-connectie — zoals algemeen voetbalnieuws over andere clubs " +
       "of toernooien, gokpromoties/wedtips of nieuws buiten het voetbal — betekent is_relevant=false. " +
+      "De feed toont uitsluitend ACTUEEL nieuws: terugblikken, jubileum- en 'op deze dag'-artikelen, quizzen " +
+      "en stukken die primair over wedstrijden of gebeurtenissen van maanden of jaren geleden gaan (bv. een " +
+      "duel uit 2009 of 2018) zijn óók is_relevant=false, hoe prominent Ajax er ook in voorkomt. " +
       "Is het wel relevant, bepaal dan of het artikel hetzelfde verhaal is als een bestaand topic (zelfde " +
       "transfer/gebeurtenis/persoon) of een nieuw topic moet starten. Wees conservatief: match alleen bij " +
       "duidelijke inhoudelijke overlap.",

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mergeAndClassify, type MergeCandidate } from "@/lib/claude/merge";
 import { isRelevant, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
+import { enrichRawItem } from "@/lib/pipeline/enrich";
 import { confidenceForTier, type SourceTier } from "@/lib/types/enums";
 import { slugify } from "@/lib/utils/slug";
 
@@ -20,7 +21,7 @@ const MAX_CANDIDATES = 20;
 export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error: rawItemError } = await supabase
     .from("raw_items")
-    .select("id, source_id, title, body, published_at, processing_status, topic_id, sources(name, tier, slug)")
+    .select("id, source_id, title, body, url, published_at, processing_status, topic_id, publisher_name, enriched_at, sources(name, tier, slug)")
     .eq("id", rawItemId)
     .single();
   if (rawItemError) throw rawItemError;
@@ -37,6 +38,10 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
     await supabase.from("raw_items").update({ processing_status: "skipped" }).eq("id", rawItemId);
     return { topicId: null, isNewTopic: false, skipped: true };
   }
+
+  // Vlak vóór de Claude-call verrijken (originele URL + artikel-intro); voor
+  // vertaalde items is dit al in de translate-stap gebeurd (enriched_at gezet).
+  const enriched = await enrichRawItem(supabase, rawItem);
 
   const since = new Date(Date.now() - CANDIDATE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data: candidateRows, error: candidatesError } = await supabase
@@ -56,7 +61,7 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
 
   const result = await mergeAndClassify({
     title: rawItem.title,
-    body: rawItem.body,
+    body: enriched.body,
     sourceName,
     sourceTier,
     candidates,
