@@ -45,9 +45,28 @@ export type VoteKind = (typeof VOTE_KINDS)[number];
 export const COMMENT_STATUSES = ["visible", "hidden"] as const;
 export type CommentStatus = (typeof COMMENT_STATUSES)[number];
 
-/** Tier van de bron bepaalt het betrouwbaarheidsniveau van een topic. */
-export function confidenceForTier(tier: SourceTier): ConfidenceLevel {
-  if (tier === 1) return "BEVESTIGD";
-  if (tier === 2) return "GERUCHT";
+/** Inhoudelijk betrouwbaarheidssignaal uit de merge-call (wat het artikel zelf meldt). */
+export const CONFIDENCE_SIGNALS = ["bevestigd", "gerucht", "speculatie"] as const;
+export type ConfidenceSignal = (typeof CONFIDENCE_SIGNALS)[number];
+
+/**
+ * Betrouwbaarheid komt uit de INHOUD van het artikel, niet uit de bron-tier:
+ * een tier-2-krant die een officiële bevestiging meldt maakt het topic
+ * gewoon "BEVESTIGD".
+ */
+export function confidenceForSignal(signal: ConfidenceSignal): ConfidenceLevel {
+  if (signal === "bevestigd") return "BEVESTIGD";
+  if (signal === "gerucht") return "GERUCHT";
   return "PRAATPROGRAMMA";
+}
+
+const CONFIDENCE_RANK: Record<ConfidenceLevel, number> = {
+  PRAATPROGRAMMA: 0,
+  GERUCHT: 1,
+  BEVESTIGD: 2,
+};
+
+/** Hoogste van twee niveaus: eenmaal bevestigd zakt een topic niet meer terug. */
+export function maxConfidence(a: ConfidenceLevel, b: ConfidenceLevel): ConfidenceLevel {
+  return CONFIDENCE_RANK[a] >= CONFIDENCE_RANK[b] ? a : b;
 }

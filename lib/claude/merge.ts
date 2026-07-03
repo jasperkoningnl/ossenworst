@@ -1,5 +1,5 @@
 import { getClaudeClient, CLAUDE_MODEL } from "./client";
-import { TOPIC_CATEGORIES, type TopicCategory } from "@/lib/types/enums";
+import { TOPIC_CATEGORIES, type ConfidenceSignal, type TopicCategory } from "@/lib/types/enums";
 
 export interface MergeCandidate {
   id: string;
@@ -25,6 +25,7 @@ export interface MergeResult {
   category: TopicCategory;
   snippet: string;
   contribution: Contribution;
+  confidenceSignal: ConfidenceSignal;
   /** Alleen gezet als matchedTopicId null is (nieuw topic). */
   newTopicTitle: string | null;
   newTopicSummary: string | null;
@@ -40,8 +41,10 @@ const MERGE_TOOL = {
       is_relevant: {
         type: "boolean",
         description:
-          "false als het artikel geen duidelijke connectie met AFC Ajax heeft: algemeen voetbal-/competitienieuws " +
-          "zonder Ajax-link, gokpromoties en wedtips, of nieuws dat niets met voetbal te maken heeft. " +
+          "false als het artikel niet PRIMAIR over AFC Ajax gaat. Een terloopse Ajax-vermelding is niet genoeg: " +
+          "nieuws over andere clubs of hun spelers, Oranje/bondscoach-nieuws, algemeen competitienieuws, " +
+          "gokpromoties en wedtips, of niet-voetbal is allemaal false — tenzij het een concreet, aan Ajax " +
+          "gekoppeld transferverhaal is (speler wordt expliciet met Ajax in verband gebracht). " +
           "Ook false voor niet-actueel materiaal: terugblikken, jubileum- en 'op deze dag'-stukken, " +
           "quizzen en artikelen die primair over wedstrijden of gebeurtenissen van maanden of jaren geleden gaan. " +
           "Bij false mogen de overige velden nominale waarden bevatten.",
@@ -60,6 +63,15 @@ const MERGE_TOOL = {
         enum: ["nieuw", "bevestigt", "nuanceert", "detail"],
         description: "nieuw = start een topic, bevestigt/nuanceert/detail = aard van de bijdrage aan een bestaand topic.",
       },
+      confidence_signal: {
+        type: "string",
+        enum: ["bevestigd", "gerucht", "speculatie"],
+        description:
+          "Wat het ARTIKEL INHOUDELIJK meldt: 'bevestigd' = officieel afgerond of door club/speler bevestigd " +
+          "(deal rond, presentatie, officiële mededeling, medische keuring doorstaan, 'definitief'); " +
+          "'gerucht' = serieuze berichtgeving over iets dat nog niet rond is (interesse, onderhandelingen, " +
+          "bod); 'speculatie' = talkshowpraat, columns, opinies of geruchten zonder eigen bronnen.",
+      },
       new_topic_title: {
         type: ["string", "null"],
         description: "Korte NL-kop voor het topic. Alleen invullen als matched_topic_id null is.",
@@ -70,7 +82,7 @@ const MERGE_TOOL = {
           "1-2 zinnen NL in de stijl 'Volgens De Telegraaf...'. Alleen invullen als matched_topic_id null is.",
       },
     },
-    required: ["is_relevant", "matched_topic_id", "category", "snippet", "contribution"],
+    required: ["is_relevant", "matched_topic_id", "category", "snippet", "contribution", "confidence_signal"],
   },
 };
 
@@ -100,12 +112,16 @@ export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> 
       "EERST of het artikel een duidelijke connectie met AFC Ajax heeft (club, spelers, staf, transfers, " +
       "wedstrijden of jeugd van Ajax). Geen Ajax-connectie — zoals algemeen voetbalnieuws over andere clubs " +
       "of toernooien, gokpromoties/wedtips of nieuws buiten het voetbal — betekent is_relevant=false. " +
+      "Het artikel moet PRIMAIR over Ajax gaan; een terloopse vermelding is niet genoeg. " +
       "De feed toont uitsluitend ACTUEEL nieuws: terugblikken, jubileum- en 'op deze dag'-artikelen, quizzen " +
       "en stukken die primair over wedstrijden of gebeurtenissen van maanden of jaren geleden gaan (bv. een " +
       "duel uit 2009 of 2018) zijn óók is_relevant=false, hoe prominent Ajax er ook in voorkomt. " +
-      "Is het wel relevant, bepaal dan of het artikel hetzelfde verhaal is als een bestaand topic (zelfde " +
-      "transfer/gebeurtenis/persoon) of een nieuw topic moet starten. Wees conservatief: match alleen bij " +
-      "duidelijke inhoudelijke overlap.",
+      "Is het wel relevant, bepaal dan of het artikel hetzelfde verhaal is als een bestaand topic of een " +
+      "nieuw topic moet starten. Berichten over dezelfde transfer, hetzelfde gerucht of dezelfde gebeurtenis " +
+      "rond dezelfde persoon horen bij ÉÉN topic — ook als de invalshoek, details of het stadium van het " +
+      "verhaal verschillen (interesse → onderhandeling → afronding is één doorlopend verhaal). Match dus op " +
+      "persoon + verhaal, en wees alleen terughoudend bij écht verschillende verhalen (andere persoon of " +
+      "andere gebeurtenis).",
     tools: [MERGE_TOOL],
     tool_choice: { type: "tool", name: "classify_and_merge" },
     messages: [
@@ -130,6 +146,7 @@ export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> 
     category: TopicCategory;
     snippet: string;
     contribution: Contribution;
+    confidence_signal?: ConfidenceSignal;
     new_topic_title?: string | null;
     new_topic_summary?: string | null;
   };
@@ -140,6 +157,7 @@ export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> 
     category: result.category,
     snippet: result.snippet,
     contribution: result.contribution,
+    confidenceSignal: result.confidence_signal ?? "gerucht",
     newTopicTitle: result.new_topic_title ?? null,
     newTopicSummary: result.new_topic_summary ?? null,
   };

@@ -2,11 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { mergeAndClassify, type MergeCandidate } from "@/lib/claude/merge";
 import { isRelevant, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
 import { enrichRawItem } from "@/lib/pipeline/enrich";
-import { confidenceForTier, type SourceTier } from "@/lib/types/enums";
+import { confidenceForSignal, maxConfidence, type ConfidenceLevel, type SourceTier } from "@/lib/types/enums";
 import { slugify } from "@/lib/utils/slug";
 
 const CANDIDATE_WINDOW_DAYS = 14;
-const MAX_CANDIDATES = 20;
+const MAX_CANDIDATES = 30;
 
 /**
  * Vraagt Claude of een raw_item bij een bestaand topic hoort of een nieuw
@@ -84,6 +84,10 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
   let topicId = matchedTopicId;
   const reportedAt = rawItem.published_at ?? new Date().toISOString();
 
+  // Betrouwbaarheid volgt de inhoud van het artikel (officieel bevestigd /
+  // gerucht / speculatie), niet de tier van de bron.
+  const itemConfidence = confidenceForSignal(result.confidenceSignal);
+
   if (!topicId) {
     const slug = `${slugify(result.newTopicTitle ?? rawItem.title)}-${rawItem.id.slice(0, 8)}`;
     const { data: newTopic, error: newTopicError } = await supabase
@@ -92,7 +96,7 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
         slug,
         title: result.newTopicTitle ?? rawItem.title,
         category: result.category,
-        confidence: confidenceForTier(sourceTier),
+        confidence: itemConfidence,
         summary: result.newTopicSummary,
         summary_updated_at: new Date().toISOString(),
         first_seen_at: reportedAt,
@@ -120,21 +124,19 @@ export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) 
   }
 
   // confidence_at = de betrouwbaarheid van het topic ná het toevoegen van dit
-  // item — bepaalt tegelijk de nieuwe topics.confidence, dus in één keer berekend.
-  const { data: existingTierRows, error: tierError } = await supabase
-    .from("topic_items")
-    .select("sources(tier)")
-    .eq("topic_id", topicId);
-  if (tierError) throw tierError;
+  // item: het hoogste van wat het topic al had en wat dit artikel meldt —
+  // eenmaal bevestigd zakt een topic niet meer terug naar gerucht.
+  const { data: currentTopic, error: currentTopicError } = await supabase
+    .from("topics")
+    .select("confidence")
+    .eq("id", topicId)
+    .single();
+  if (currentTopicError) throw currentTopicError;
 
-  const tiers = [
-    ...(existingTierRows ?? [])
-      .map((r) => (r.sources as unknown as { tier: SourceTier } | null)?.tier)
-      .filter((t): t is SourceTier => Boolean(t)),
-    sourceTier,
-  ];
-  const bestTier = Math.min(...tiers) as SourceTier; // tier 1 = meest betrouwbaar
-  const confidenceAt = confidenceForTier(bestTier);
+  const confidenceAt = maxConfidence(
+    (currentTopic.confidence ?? "PRAATPROGRAMMA") as ConfidenceLevel,
+    itemConfidence
+  );
 
   const { error: topicItemError } = await supabase.from("topic_items").upsert(
     {

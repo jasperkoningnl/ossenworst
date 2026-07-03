@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { publisherNameFromUrl } from "@/lib/pipeline/google-news";
 import { truncate } from "@/lib/utils/text";
 import type { Topic } from "@/lib/types/database";
 import type {
@@ -31,6 +32,21 @@ interface TopicItemRow {
   sources: unknown;
 }
 
+/**
+ * Weergavenaam van een bron: de echte publisher als die bekend is, anders de
+ * bronnaam — behalve voor Google News-vangnetbronnen, waar we liever de
+ * hostname van het artikel tonen dan "Google News: …".
+ */
+function sourceDisplayName(
+  publisherName: string | null,
+  sourceName: string | null,
+  url: string | null
+): string {
+  if (publisherName) return publisherName;
+  if (sourceName && !sourceName.startsWith("Google News")) return sourceName;
+  return (url && publisherNameFromUrl(url)) || sourceName || "onbekende bron";
+}
+
 function latestInfoFromRow(row: TopicItemRow): LatestItemInfo {
   // Zonder gegenereerde Database-types ziet supabase-js many-to-one FK-joins
   // als array; runtime is het altijd één object.
@@ -45,7 +61,11 @@ function latestInfoFromRow(row: TopicItemRow): LatestItemInfo {
     title: rawItem?.title ?? null,
     body: rawItem?.body ?? null,
     url: rawItem?.url ?? null,
-    sourceName: rawItem?.publisher_name ?? source?.name ?? null,
+    sourceName: sourceDisplayName(
+      rawItem?.publisher_name ?? null,
+      source?.name ?? null,
+      rawItem?.url ?? null
+    ),
   };
 }
 
@@ -60,11 +80,15 @@ async function fetchLatestItems(
   const latest = new Map<string, LatestItemInfo>();
   if (topicIds.length === 0) return latest;
 
-  const { data: rows } = await supabase
+  const { data: rows, error } = await supabase
     .from("topic_items")
     .select("topic_id, reported_at, raw_items(title, body, url, publisher_name), sources(name)")
     .in("topic_id", topicIds)
     .order("reported_at", { ascending: false });
+  // Niet fataal (de feed valt terug op topic-titel/samenvatting), maar wél
+  // zichtbaar maken: dit faalt bv. wanneer de raw_items-migratie
+  // (publisher_name) nog niet gedraaid is.
+  if (error) console.error("Laatste bron-items ophalen mislukt:", error.message);
 
   for (const row of (rows ?? []) as TopicItemRow[]) {
     if (!latest.has(row.topic_id)) latest.set(row.topic_id, latestInfoFromRow(row));
@@ -156,7 +180,7 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   if (error) throw error;
   if (!topic) return null;
 
-  const [{ data: itemRows }, { data: commentRows }] = await Promise.all([
+  const [{ data: itemRows, error: itemRowsError }, { data: commentRows }] = await Promise.all([
     supabase
       .from("topic_items")
       .select(
@@ -172,6 +196,9 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
       .order("created_at", { ascending: false }),
   ]);
 
+  // Zie fetchLatestItems: zichtbaar maken i.p.v. stil een lege tijdlijn tonen.
+  if (itemRowsError) console.error("Topic-items ophalen mislukt:", itemRowsError.message);
+
   // Zonder gegenereerde Database-types ziet supabase-js many-to-one FK-joins
   // als array; runtime is het altijd één object.
   const items = (itemRows ?? []).map((row) => ({
@@ -186,7 +213,11 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   }));
 
   const displayName = (item: (typeof items)[number]) =>
-    item.rawItem?.publisher_name ?? item.source?.name ?? "onbekende bron";
+    sourceDisplayName(
+      item.rawItem?.publisher_name ?? null,
+      item.source?.name ?? null,
+      item.rawItem?.url ?? null
+    );
 
   const timeline: TopicTimelineEntry[] = items.map((row) => ({
     date: formatShortDate(row.reported_at),

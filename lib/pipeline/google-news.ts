@@ -22,6 +22,20 @@ export function isGoogleNewsUrl(url: string): boolean {
   return ARTICLE_ID_RE.test(url);
 }
 
+/**
+ * Publishernaam afgeleid van de hostname ("telegraaf.nl") — vangnet voor
+ * items zonder expliciete publishernaam, zodat de UI nooit "Google News: …"
+ * hoeft te tonen zodra de URL herleid is.
+ */
+export function publisherNameFromUrl(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return host.includes("news.google") ? null : host;
+  } catch {
+    return null;
+  }
+}
+
 /** Offline decodering van het oude id-formaat. null bij nieuw formaat of afwijkende bytes. */
 export function decodeGoogleNewsUrl(url: string): string | null {
   const match = url.match(ARTICLE_ID_RE);
@@ -56,9 +70,27 @@ export function decodeGoogleNewsUrl(url: string): string | null {
   return decoded;
 }
 
+/** Publisher-URL rechtstreeks uit de splash-HTML, als die erin staat. */
+function extractUrlFromSplashHtml(html: string): string | null {
+  // Ouder mechanisme: het doel-artikel staat letterlijk in een data-attribuut.
+  const dataNAu = html.match(/data-n-au="(https?:\/\/[^"]+)"/)?.[1];
+  if (dataNAu && !dataNAu.includes("news.google.com")) return dataNAu;
+
+  // Sommige splash-pagina's bevatten een gewone anchor naar het artikel.
+  const anchorMatches = html.matchAll(/<a[^>]+href="(https?:\/\/[^"]+)"/g);
+  for (const match of anchorMatches) {
+    const href = match[1];
+    if (!/google\.com|googleusercontent\.com|gstatic\.com|google\.[a-z.]+\//.test(href)) {
+      return href;
+    }
+  }
+  return null;
+}
+
 /**
- * Netwerk-fallback voor het nieuwe id-formaat: haal signature/timestamp van de
- * artikelpagina en vraag de echte URL op via batchexecute.
+ * Netwerk-fallback voor het nieuwe id-formaat: eerst de splash-pagina zelf
+ * afzoeken naar de publisher-URL; lukt dat niet, dan signature/timestamp
+ * pakken en de echte URL opvragen via batchexecute.
  */
 async function decodeViaBatchExecute(articleId: string): Promise<string | null> {
   const pageRes = await fetch(`https://news.google.com/rss/articles/${articleId}`, {
@@ -67,6 +99,9 @@ async function decodeViaBatchExecute(articleId: string): Promise<string | null> 
   });
   if (!pageRes.ok) return null;
   const html = await pageRes.text();
+
+  const fromHtml = extractUrlFromSplashHtml(html);
+  if (fromHtml) return fromHtml;
 
   const signature = html.match(/data-n-a-sg="([^"]+)"/)?.[1];
   const timestamp = html.match(/data-n-a-ts="([^"]+)"/)?.[1];
