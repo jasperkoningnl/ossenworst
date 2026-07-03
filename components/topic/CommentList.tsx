@@ -1,39 +1,42 @@
 import type { TopicComment } from "@/lib/types/feed";
+import { CommentForm } from "./CommentForm";
 
-export function CommentList({ comments }: { comments: TopicComment[] }) {
+export function CommentList({ comments, topicId }: { comments: TopicComment[]; topicId: string }) {
   return (
     <div>
-      <div className="mb-2.5 flex items-center gap-2">
-        <span className="h-[13px] w-[3px]" style={{ background: "#2C6FD6" }} />
-        <span className="font-mono text-[10px] font-bold tracking-wide" style={{ color: "var(--fg-label)" }}>
-          REACTIES ({comments.length})
-        </span>
-      </div>
-      <div className="flex flex-col gap-2.5 pb-6">
+      <h3
+        className="mb-3 border-l-4 pl-2.5 text-[13px] font-bold uppercase tracking-wide"
+        style={{ borderColor: "var(--ajax-red)", color: "var(--fg-label)" }}
+      >
+        Reacties ({comments.length})
+      </h3>
+
+      <CommentForm topicId={topicId} />
+
+      <div className="flex flex-col gap-2.5 pb-8">
+        {comments.length === 0 && (
+          <p className="text-[13px]" style={{ color: "var(--fg3)" }}>
+            Nog geen reacties — trap af.
+          </p>
+        )}
         {comments.map((comment, i) => (
           <div
             key={i}
-            className="rounded-md border px-3 py-2.5"
-            style={{ background: "var(--surfa)", borderColor: "var(--hair2)" }}
+            className="rounded-md border px-3.5 py-3"
+            style={{ background: "var(--card)", borderColor: "var(--bd)" }}
           >
             <div className="mb-1 flex items-center gap-2">
               <span
-                className="font-mono text-[10px] font-bold"
-                style={{ color: comment.isAnonymous ? "var(--fg-label)" : "#C9A227" }}
+                className="text-[12.5px] font-bold"
+                style={{ color: comment.isAnonymous ? "var(--fg-label)" : "var(--ajax-red)" }}
               >
                 {comment.username}
               </span>
-              <span className="font-mono text-[8px]" style={{ color: "var(--fg5)" }}>
+              <span className="text-[11px]" style={{ color: "var(--fg5)" }}>
                 {comment.timeAgo}
               </span>
-              <span
-                className="ml-auto flex items-center gap-1 font-mono text-[9px]"
-                style={{ color: "var(--fg3)" }}
-              >
-                ▲ {comment.upvotes}
-              </span>
             </div>
-            <div className="text-[13px] leading-snug" style={{ color: "var(--fg-body)" }}>
+            <div className="text-[13.5px] leading-normal" style={{ color: "var(--fg-body)" }}>
               {comment.body}
             </div>
           </div>

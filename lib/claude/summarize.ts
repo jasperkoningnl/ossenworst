@@ -1,4 +1,4 @@
-import { getClaudeClient, CLAUDE_MODEL } from "./client";
+import { getClaudeClient, CLAUDE_MODEL_CHEAP } from "./client";
 
 export interface SummarizeTimelineEntry {
   sourceName: string;
@@ -12,8 +12,10 @@ export async function summarizeTopic(title: string, timeline: SummarizeTimelineE
 
   const timelineText = timeline.map((t) => `- ${t.sourceName} (${t.reportedAt}): ${t.snippet}`).join("\n");
 
+  // Platte tekst zonder tool use: dit werkt (net als de vertaling) prima en
+  // veel goedkoper op Haiku.
   const message = await client.messages.create({
-    model: CLAUDE_MODEL,
+    model: CLAUDE_MODEL_CHEAP,
     max_tokens: 512,
     system:
       "Je schrijft de lopende NL-samenvatting van een Ajax-nieuwstopic voor Ossenworst Manager. Stijl: " +

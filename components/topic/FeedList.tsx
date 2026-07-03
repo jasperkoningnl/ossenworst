@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 import { FilterTabs } from "@/components/topic/FilterTabs";
 import { TopicCard } from "@/components/topic/TopicCard";
 import type { TopicFeedItem } from "@/lib/types/feed";
@@ -24,32 +25,16 @@ export function FeedList({ items }: { items: TopicFeedItem[] }) {
 
   return (
     <div>
-      <div
-        className="flex items-center gap-2.5 border-b px-3.5 py-2.5"
-        style={{ background: "var(--head)", borderColor: "var(--bd)" }}
-      >
-        <span className="h-4 w-1" style={{ background: "#D2122E" }} />
-        <span className="text-[17px] font-bold tracking-wide" style={{ color: "var(--fg-hi)" }}>
-          NIEUWS
-        </span>
-        <span className="ml-auto font-mono text-[9px]" style={{ color: "var(--fg3)" }}>
-          {items.length} BERICHTEN
-        </span>
-      </div>
-
+      <SectionTitle title="Nieuws" aside={`${items.length} topics`} />
       <FilterTabs value={filter} onChange={setFilter} />
 
       <div className="flex flex-col">
-        {filtered.map((item, i) => (
-          <TopicCard key={item.id} item={item} index={i} />
+        {filtered.map((item) => (
+          <TopicCard key={item.id} item={item} />
         ))}
-        {filtered.length === 0 ? (
-          <div className="px-4 py-6 text-sm" style={{ color: "var(--fg2)" }}>
+        {filtered.length === 0 && (
+          <div className="px-4 py-8 text-sm" style={{ color: "var(--fg2)" }}>
             Nog geen berichten in deze categorie.
-          </div>
-        ) : (
-          <div className="py-4 text-center font-mono text-[8.5px]" style={{ color: "var(--fg6)" }}>
-            — EINDE FEED —
           </div>
         )}
       </div>

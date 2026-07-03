@@ -7,16 +7,16 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="mb-4">
-      <div className="mb-2 font-mono text-[9px] tracking-wide" style={{ color: "var(--fg3)" }}>
-        WEERGAVE
+    <div className="mb-6">
+      <div className="mb-2 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--fg-label)" }}>
+        Weergave
       </div>
       <SegmentedControl
         value={theme}
         onChange={setTheme}
         options={[
-          { value: "dark", label: "DONKER" },
-          { value: "light", label: "LICHT" },
+          { value: "light", label: "Licht" },
+          { value: "dark", label: "Donker" },
         ]}
       />
     </div>

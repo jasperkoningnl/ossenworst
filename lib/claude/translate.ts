@@ -16,12 +16,20 @@ function stripCodeFences(text: string): string {
     .trim();
 }
 
+/** De vertaalde body voedt alleen de merge-call (die zelf op 1500 tekens
+ * afkapt) en wordt nergens integraal getoond — langer vertalen is weggegooid
+ * geld. */
+const MAX_BODY_CHARS = 2000;
+
 export async function translateToNl(
   title: string,
   body: string | null,
   sourceLanguage: string
 ): Promise<TranslationResult> {
   const client = getClaudeClient();
+
+  const boundedBody =
+    body && body.length > MAX_BODY_CHARS ? `${body.slice(0, MAX_BODY_CHARS)}…` : body;
 
   const message = await client.messages.create({
     model: TRANSLATE_MODEL,
@@ -38,7 +46,7 @@ export async function translateToNl(
         content:
           `Brontaal: ${sourceLanguage}\n\n` +
           `Titel: ${title}\n\n` +
-          `Tekst: ${body ?? "(geen tekst)"}`,
+          `Tekst: ${boundedBody ?? "(geen tekst)"}`,
       },
     ],
   });

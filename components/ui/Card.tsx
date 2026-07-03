@@ -1,7 +1,7 @@
 export function Card({
   children,
   className = "",
-  borderColor = "var(--bd)",
+  borderColor = "var(--bd-card)",
 }: {
   children: React.ReactNode;
   className?: string;

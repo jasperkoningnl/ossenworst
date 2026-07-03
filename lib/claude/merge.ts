@@ -72,8 +72,18 @@ const MERGE_TOOL = {
   },
 };
 
+/** Artikeltekst afkappen vóór de call: de eerste alinea's zijn genoeg om te
+ * classificeren/matchen, en dit drukt de input-tokens (= kosten) flink bij
+ * bronnen die volledige artikelen meesturen. */
+const MAX_BODY_CHARS = 1500;
+
 export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> {
   const client = getClaudeClient();
+
+  const body =
+    input.body && input.body.length > MAX_BODY_CHARS
+      ? `${input.body.slice(0, MAX_BODY_CHARS)}…`
+      : input.body;
 
   const candidateList = input.candidates
     .map((c) => `- id=${c.id} | ${c.title} | categorie=${c.category} | samenvatting=${c.summary ?? "(geen)"}`)
@@ -98,7 +108,7 @@ export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> 
         role: "user",
         content:
           `NIEUW ARTIKEL\nBron: ${input.sourceName} (tier ${input.sourceTier})\n` +
-          `Titel: ${input.title}\nInhoud: ${input.body ?? "(geen tekst)"}\n\n` +
+          `Titel: ${input.title}\nInhoud: ${body ?? "(geen tekst)"}\n\n` +
           `BESTAANDE TOPICS (laatste 14 dagen):\n${candidateList || "(geen)"}`,
       },
     ],

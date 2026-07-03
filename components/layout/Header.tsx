@@ -1,32 +1,32 @@
 import { OssenworstLogo } from "@/components/ui/OssenworstLogo";
 
+/** Rode kopbalk in CM-stijl: wit logo-blok, witte titel, live-stip. */
 export function Header() {
   return (
-    <div className="flex-none" style={{ background: "var(--bar)" }}>
-      <div className="flex h-[50px] items-center justify-between px-3.5">
-        <div className="flex items-center gap-2.5">
+    <div className="flex-none" style={{ background: "var(--ajax-red)" }}>
+      <div className="flex h-[54px] items-center justify-between px-4">
+        <div className="flex items-center gap-3">
           <div
-            className="h-[31px] w-[31px] flex-none rounded-lg p-[3px]"
-            style={{ background: "#D2122E", boxShadow: "0 0 0 1px rgba(255,255,255,.14) inset" }}
+            className="h-[34px] w-[34px] flex-none rounded-md bg-white p-[3px]"
+            style={{ boxShadow: "0 1px 0 rgba(0,0,0,.25)" }}
           >
             <OssenworstLogo className="h-full w-full" />
           </div>
-          <span className="text-lg font-bold tracking-tight" style={{ color: "var(--fg-hi)" }}>
-            Ossenworst Manager
-          </span>
+          <div className="leading-tight">
+            <div className="text-[17px] font-bold tracking-tight text-white">
+              Ossenworst Manager
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75">
+              Al het Ajax-nieuws
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 font-mono text-[9px]" style={{ color: "var(--fg-label)" }}>
-          <span
-            className="osw-pulse h-1.5 w-1.5 rounded-full"
-            style={{ background: "#D2122E" }}
-          />
+        <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-white/90">
+          <span className="osw-pulse h-2 w-2 rounded-full bg-white" />
           LIVE
         </div>
       </div>
-      <div
-        className="h-[2px]"
-        style={{ background: "linear-gradient(90deg,#D2122E 0%,#D2122E 38%,#2C6FD6 38%,#2C6FD6 100%)" }}
-      />
+      <div className="h-[3px]" style={{ background: "var(--ajax-red-dark)" }} />
     </div>
   );
 }

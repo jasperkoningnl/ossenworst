@@ -1,91 +1,97 @@
 @import "tailwindcss";
 
 /*
- * Tokens 1:1 overgenomen uit design/OssenworstApp.dc.html (Claude Design).
- * Neutrale/oppervlakte-tokens (bg, bar, head, card, fg*, bd*, hair*, track,
- * stripe-b) zijn theme-afhankelijk en wisselen via [data-theme="light"] —
- * gebruik ze in componenten als CSS-var (`bg-[var(--card)]` etc.), niet als
- * Tailwind-kleur, zodat de light/dark-switch puur CSS-cascade blijft zonder
- * her-render. Accentkleuren (ajax-red, accent-blue, confirmed, rumor, gold)
- * zijn theme-onafhankelijk en wél als Tailwind-kleur geregistreerd omdat ze
- * overal als vaste utility worden gebruikt (badges, knoppen, tier-stippen).
+ * Ossenworst Manager — thema "Krantenkiosk".
+ *
+ * Licht-eerst: rood/wit als hoofdkleuren, warm papierwit als achtergrond,
+ * met een knipoog naar Championship Manager 01/02 (vlakke gekleurde
+ * titelbalken, zebra-tabellen, condensed kapitalen, harde 1px-randen).
+ *
+ * De variabele-namen zijn ongewijzigd t.o.v. het oude donkere thema zodat
+ * componenten die `var(--card)` etc. gebruiken zonder aanpassing meekleuren.
+ * Donker blijft beschikbaar als secundair thema via [data-theme="dark"].
  */
 :root {
-  /* dark (default) */
-  --bg: #0a0d12;
-  --bar: #05070b;
-  --head: #0c1016;
-  --card: #10151d;
-  --cardhd: #0b0f16;
-  --chip: #11161e;
-  --surfa: #0e131a;
-  --surfb: #0b0f15;
-  --track: #1a212c;
-  --stripe-b: #141a23;
-  --frame: #04060a;
+  /* licht (default) */
+  --bg: #f6f3ec;
+  --bar: #ffffff;
+  --head: #efe9dd;
+  --card: #ffffff;
+  --cardhd: #f3eee4;
+  --chip: #ffffff;
+  --surfa: #ffffff;
+  --surfb: #faf7f0;
+  --track: #e7e0d2;
+  --stripe-b: #f1ece1;
+  --frame: #d8cfbd;
 
-  --bd: #1b2230;
-  --bd-soft: #161c26;
-  --bd2: #232b38;
-  --bd-card: #20283a;
-  --bd-dash: #2a3340;
-  --hair: #12171d;
-  --hair2: #14191f;
+  --bd: #ddd5c4;
+  --bd-soft: #e7e0d2;
+  --bd2: #cfc6b1;
+  --bd-card: #d8cfbd;
+  --bd-dash: #c4baa3;
+  --hair: #eae4d7;
+  --hair2: #e7e0d2;
 
-  --fg: #ececE4;
-  --fg-hi: #f2f3ef;
-  --fg-strong: #e4e8ee;
-  --fg-c: #c3cad4;
-  --fg-body: #aeb6c2;
-  --fg-m: #99a2ae;
-  --fg2: #828b98;
-  --fg-label: #7a8290;
-  --fg3: #5c6470;
-  --fg5: #4e5663;
-  --fg6: #3c434e;
+  --fg: #26221b;
+  --fg-hi: #17140f;
+  --fg-strong: #26221b;
+  --fg-c: #3f3a30;
+  --fg-body: #4a4439;
+  --fg-m: #5f594c;
+  --fg2: #6b6455;
+  --fg-label: #7c7463;
+  --fg3: #8b8371;
+  --fg5: #a29a87;
+  --fg6: #b6ae9b;
 
   --ajax-red: #d2122e;
-  --accent-blue: #2c6fd6;
-  --confirmed: #39b14e;
-  --rumor: #e0a416;
-  --gold: #f2c94c;
+  --ajax-red-dark: #a60d24;
+  --accent-blue: #1f5fa8;
+  --confirmed: #1f8a3d;
+  --rumor: #c07f04;
+  --gold: #b58900;
 
   --font-sans: var(--font-barlow), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-plex-mono), "SFMono-Regular", ui-monospace, monospace;
 }
 
-[data-theme="light"] {
-  --bg: #ffffff;
-  --bar: #ffffff;
-  --head: #fdeeec;
-  --card: #fef5f4;
-  --cardhd: #fbebe9;
-  --chip: #fceeec;
-  --surfa: #ffffff;
-  --surfb: #fcf4f3;
-  --track: #f0dad7;
-  --stripe-b: #f8ecea;
-  --frame: #e7d6d3;
+[data-theme="dark"] {
+  --bg: #12100c;
+  --bar: #1a1712;
+  --head: #201c15;
+  --card: #1c1913;
+  --cardhd: #241f17;
+  --chip: #1c1913;
+  --surfa: #17140f;
+  --surfb: #1c1913;
+  --track: #2e2a21;
+  --stripe-b: #242019;
+  --frame: #0c0a07;
 
-  --bd: #f2dbd8;
-  --bd-soft: #f7e7e5;
-  --bd2: #ecd4d1;
-  --bd-card: #edd5d2;
-  --bd-dash: #e3c6c2;
-  --hair: #f5e5e3;
-  --hair2: #f5e5e3;
+  --bd: #353024;
+  --bd-soft: #2b2720;
+  --bd2: #423c2d;
+  --bd-card: #3a3428;
+  --bd-dash: #4a4433;
+  --hair: #272319;
+  --hair2: #2b2720;
 
-  --fg: #1b1416;
-  --fg-hi: #0f090b;
-  --fg-strong: #241d1f;
-  --fg-c: #463b3d;
-  --fg-body: #4a3f41;
-  --fg-m: #6e6264;
-  --fg2: #736567;
-  --fg-label: #847678;
-  --fg3: #8c7d7f;
-  --fg5: #a99b9d;
-  --fg6: #b9abad;
+  --fg: #ece7db;
+  --fg-hi: #f6f2e8;
+  --fg-strong: #e6e1d4;
+  --fg-c: #cdc7b7;
+  --fg-body: #bcb5a3;
+  --fg-m: #a49d8b;
+  --fg2: #948d7b;
+  --fg-label: #857e6d;
+  --fg3: #6f695a;
+  --fg5: #5b5548;
+  --fg6: #47422f;
+
+  --confirmed: #3cb45e;
+  --rumor: #e0a416;
+  --gold: #f2c94c;
 }
 
 @theme inline {
@@ -103,8 +109,19 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* CM-stijl sectietitelbalk: vol rood vlak, witte condensed kapitalen. */
+.osw-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ajax-red);
+  border-bottom: 2px solid var(--ajax-red-dark);
+  color: #fff;
+  padding: 9px 16px;
 }
 
 .osw-scroll::-webkit-scrollbar {

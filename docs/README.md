@@ -3,6 +3,13 @@
 Mobile-first Ajax-nieuwsaggregator gecombineerd met Football Manager-achtige features
 (tactiek, transferlijst, verlanglijst). Zie `PLAN.md` voor de volledige architectuur.
 
+## Vormgeving
+
+Licht thema is de standaard: rood/wit als hoofdkleuren met een knipoog naar
+Championship Manager 01/02 (rode titelbalken, zebra-tabellen, condensed
+kapitalen). Donker blijft beschikbaar via Profiel → Weergave. De thema-tokens
+staan in `app/globals.css`; componenten gebruiken ze als CSS-variabelen.
+
 ## Stack
 
 - Next.js 15 (App Router) + TypeScript + Tailwind CSS v4
@@ -85,6 +92,34 @@ Actions-tab.
 zelf een echte `feed_url` toevoegt (in `sources.seed.ts` + opnieuw de
 "Seed sources"-workflow draaien, of rechtstreeks in de `sources`-tabel) en
 `enabled` op `true` zet.
+
+## FM-features (opstelling, transferlijst, verlanglijst, reacties)
+
+De interactieve schermen schrijven rechtstreeks (met RLS) naar Supabase via een
+anonieme sessie — geen e-mail of wachtwoord nodig. Eenmalige setup:
+
+1. Draai de migratie `supabase/migrations/20260703000000_fm_interactie.sql`
+   (publieke leesrechten voor aggregaties + unieke index op spelersnamen).
+2. Zet in Supabase **Authentication → Sign In / Providers → Anonymous
+   sign-ins** aan. Zonder deze instelling tonen de schermen een nette melding
+   maar kan er niet gestemd/gereageerd worden.
+3. Draai de **"Seed sources"**-workflow opnieuw: die seedt nu ook de selectie
+   naar de `players`-tabel (nodig voor stemmen en opstellingen). Zolang de
+   tabel leeg is, tonen Team/Tactiek/Transfers de statische seed-selectie en
+   staat insturen uit.
+
+De selectie staat in `lib/players/squad.seed.ts` en wordt bij elke seed-run
+geüpsert op naam; later vervangt de `sync_squad`-job (API-Football /
+Transfermarkt-datasets) dit handwerk.
+
+## Claude-kosten
+
+- Vertaling en samenvatting draaien op Haiku 4.5; alleen merge/classificatie
+  (tool use) draait op Sonnet, omdat Haiku-tool-use-calls in deze omgeving
+  eerder stelselmatig faalden (zie notitie in `lib/claude/cleanup.ts`).
+- Artikelteksten worden vóór de vertaal-/merge-calls afgekapt (1500-2000
+  tekens) en het gratis keyword-relevantiefilter draait vóór elke betaalde call.
+- De vertalingen worden gecachet in de `translations`-tabel.
 
 ## Scripts
 

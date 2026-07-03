@@ -21,8 +21,8 @@ export function FilterTabs({
 }) {
   return (
     <div
-      className="osw-scroll flex gap-[5px] overflow-x-auto border-b px-3.5 pb-[11px] pt-2.5"
-      style={{ background: "var(--head)", borderColor: "var(--bd-soft)" }}
+      className="osw-scroll flex gap-1.5 overflow-x-auto border-b px-4 py-2.5"
+      style={{ background: "var(--head)", borderColor: "var(--bd)" }}
     >
       {FEED_FILTERS.map((f) => {
         const active = f.label === value;
@@ -30,11 +30,11 @@ export function FilterTabs({
           <button
             key={f.label}
             onClick={() => onChange(f.label)}
-            className="flex-none rounded-[3px] border px-2.5 py-1.5 font-mono text-[9.5px] font-semibold tracking-wide"
+            className="flex-none cursor-pointer rounded-sm border px-3 py-1.5 text-[12.5px] font-semibold"
             style={{
-              background: active ? "#D2122E" : "var(--chip)",
+              background: active ? "var(--ajax-red)" : "var(--chip)",
               color: active ? "#fff" : "var(--fg2)",
-              borderColor: active ? "#D2122E" : "var(--bd2)",
+              borderColor: active ? "var(--ajax-red-dark)" : "var(--bd2)",
             }}
           >
             {f.label}

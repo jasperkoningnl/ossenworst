@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { eersteElftal, jongAjax } from "@/lib/mock/players";
+import { playerSeeds } from "@/lib/players/squad.seed";
 
 /**
  * Bronnen die per definitie over Ajax gaan (club- en fansites); alleen items
@@ -43,7 +43,7 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const PLAYER_KEYWORDS = [...eersteElftal, ...jongAjax].flatMap((p) => {
+const PLAYER_KEYWORDS = playerSeeds.flatMap((p) => {
   const fullName = normalize(p.name);
   const surname = fullName.split(" ").slice(-1)[0];
   return AMBIGUOUS_SURNAMES.has(surname) ? [fullName] : [fullName, surname];
