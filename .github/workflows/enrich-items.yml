@@ -1,0 +1,30 @@
+name: Enrich items
+
+# Handmatig te starten: verrijkt bestaande raw_items die vóór de
+# verrijkingsstap zijn verwerkt — herleidt Google News-URL's naar de originele
+# publisher-URL, vult publishernamen aan en haalt ontbrekende artikel-intro's
+# op. Veilig om meerdere keren te draaien; per run wordt een batch verwerkt
+# (draai opnieuw zolang "remaining" > 0).
+on:
+  workflow_dispatch:
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verrijk bestaande items (bronlinks, publishers, intro's)
+        run: |
+          HTTP_CODE=$(curl -s --max-time 300 -o response.json -w '%{http_code}' \
+            -X POST "${{ vars.APP_URL }}/api/admin/enrich-items" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+          echo "HTTP $HTTP_CODE"
+          jq . response.json 2>/dev/null || cat response.json
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::enrich-items gaf HTTP $HTTP_CODE — zie de response hierboven"
+            exit 1
+          fi
+          {
+            echo "## Enrich items"
+            echo ""
+            echo "Kandidaten: $(jq -r '.candidates' response.json) — verwerkt: $(jq -r '.processed' response.json) — Google News-links herleid: $(jq -r '.resolved' response.json) — nog Google News: $(jq -r '.stillGoogle' response.json) — fouten: $(jq -r '.failures' response.json) — resterend: $(jq -r '.remaining' response.json)"
+          } >> "$GITHUB_STEP_SUMMARY"

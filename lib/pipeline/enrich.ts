@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isGoogleNewsUrl, resolveGoogleNewsUrl } from "./google-news";
+import { isGoogleNewsUrl, publisherNameFromUrl, resolveGoogleNewsUrl } from "./google-news";
 import { fetchArticleIntro } from "./article-intro";
 import { truncate } from "@/lib/utils/text";
 
@@ -34,7 +34,8 @@ export interface EnrichedFields {
 
 export async function enrichRawItem(
   supabase: SupabaseClient,
-  rawItem: EnrichableRawItem
+  rawItem: EnrichableRawItem,
+  options: { skipIntro?: boolean } = {}
 ): Promise<EnrichedFields> {
   if (rawItem.enriched_at) {
     return { url: rawItem.url, body: rawItem.body };
@@ -43,8 +44,9 @@ export async function enrichRawItem(
   let url = rawItem.url;
   let body = rawItem.body;
   let publisherName = rawItem.publisher_name;
+  const cameViaGoogleNews = isGoogleNewsUrl(rawItem.url);
 
-  if (isGoogleNewsUrl(url)) {
+  if (cameViaGoogleNews) {
     try {
       const resolved = await resolveGoogleNewsUrl(url);
       if (resolved) url = resolved;
@@ -53,7 +55,7 @@ export async function enrichRawItem(
     }
   }
 
-  const needsIntro = !body || body.length < MIN_BODY_CHARS;
+  const needsIntro = !options.skipIntro && (!body || body.length < MIN_BODY_CHARS);
   // Zonder herleide URL heeft fetchen geen zin: de Google News-pagina zelf
   // bevat geen artikeltekst.
   if (needsIntro && !isGoogleNewsUrl(url)) {
@@ -67,6 +69,11 @@ export async function enrichRawItem(
       console.error(`Artikel-intro ophalen mislukt voor ${rawItem.id}:`, err);
     }
   }
+
+  // Laatste vangnet voor de weergavenaam van Google News-items: de hostname
+  // van de herleide URL ("telegraaf.nl"). Directe bronnen houden gewoon hun
+  // bronnaam en krijgen géén publisher_name.
+  if (cameViaGoogleNews && !publisherName) publisherName = publisherNameFromUrl(url);
 
   await supabase
     .from("raw_items")

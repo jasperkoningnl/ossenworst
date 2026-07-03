@@ -71,9 +71,16 @@ jobs, falende bronnen en de nieuwste topics (via `GET
 /api/admin/pipeline-status`, beveiligd met `ADMIN_SECRET`).
 
 **Topics opschonen:** workflow **"Cleanup topics"** laat Claude alle bestaande
-topics beoordelen en verwijdert de topics zonder Ajax-connectie (wedtips,
-algemeen voetbalnieuws, niet-voetbal) én niet-actueel materiaal (terugblikken,
-jubileumstukken, wedstrijden van jaren geleden) — handig na filterwijzigingen.
+topics beoordelen: verwijdert topics zonder Ajax-connectie (wedtips, algemeen
+voetbalnieuws, niet-voetbal) of zonder actualiteit (terugblikken,
+jubileumstukken, wedstrijden van jaren geleden), voegt duplicaat-topics over
+hetzelfde verhaal samen, en zet topics waarvan de inhoud officieel bevestigd
+is op BEVESTIGD — handig na filterwijzigingen.
+
+**Bestaande items verrijken:** workflow **"Enrich items"** herleidt Google
+News-URL's van al-verwerkte items alsnog naar de originele publisher-URL,
+vult publishernamen aan en haalt ontbrekende artikel-intro's op. Per run
+wordt een batch verwerkt; draai opnieuw zolang `remaining` > 0.
 
 ### Actualiteit
 
@@ -111,9 +118,19 @@ Bron-tiers zijn backend-informatie: de UI toont alleen een
 betrouwbaarheidsstip (groen/geel/grijs) en het label "Onbevestigd" i.p.v.
 "Praatprogramma". Hiervoor is de migratie
 `supabase/migrations/20260703010000_raw_items_enrichment.sql` nodig; draai
-daarna de **"Seed sources"**-workflow opnieuw (voor de `when:7d`-queries) en
-eenmalig **"Cleanup topics"** om bestaand verouderd/irrelevant materiaal uit
-de feed te halen.
+daarna de **"Seed sources"**-workflow opnieuw (voor de `when:7d`-queries),
+**"Enrich items"** (herhaald, tot `remaining` 0 is) om de bronlinks van
+bestaand materiaal te herstellen, en **"Cleanup topics"** om verouderd/
+irrelevant materiaal te verwijderen en duplicaten samen te voegen.
+
+### Betrouwbaarheid
+
+De betrouwbaarheid van een topic volgt de **inhoud** van de artikelen, niet
+de tier van de bron: de merge-call geeft per artikel een signaal terug
+(officieel bevestigd / gerucht / speculatie) en een topic krijgt het hoogste
+niveau dat tot nu toe gemeld is — eenmaal bevestigd zakt het niet meer terug.
+Zo wordt een afgeronde transfer "Bevestigd" zodra een krant de officiële
+bevestiging meldt, ook zonder tier-1-bron.
 
 **Eenmalige setup** (naast wat je al deed voor bronnen seeden):
 1. Zet `CRON_SECRET` in Vercel op een willekeurige, geheime waarde (staat al in

@@ -1,8 +1,9 @@
 name: Cleanup topics
 
-# Handmatig te starten: laat Claude alle bestaande topics beoordelen en
-# verwijdert de topics zonder Ajax-connectie (wedtips, algemeen voetbalnieuws,
-# niet-voetbal). Resultaat verschijnt in de run-samenvatting.
+# Handmatig te starten: laat Claude alle bestaande topics beoordelen —
+# verwijdert topics zonder Ajax-connectie of actualiteit, voegt duplicaten
+# samen en zet officieel bevestigde topics op BEVESTIGD. Resultaat verschijnt
+# in de run-samenvatting.
 on:
   workflow_dispatch:
 
@@ -10,7 +11,7 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Ruim niet-Ajax-topics op
+      - name: Ruim topics op (verwijderen / samenvoegen / bevestigen)
         run: |
           HTTP_CODE=$(curl -s --max-time 300 -o response.json -w '%{http_code}' \
             -X POST "${{ vars.APP_URL }}/api/admin/cleanup-topics" \
@@ -24,11 +25,16 @@ jobs:
           {
             echo "## Cleanup topics"
             echo ""
-            echo "Gecontroleerd: $(jq -r '.checked' response.json) — verwijderd: $(jq -r '.removed' response.json) — mislukte reviewbatches: $(jq -r '.reviewErrors // 0' response.json)"
+            echo "Gecontroleerd: $(jq -r '.checked' response.json) — verwijderd: $(jq -r '.removed' response.json) — samengevoegd: $(jq -r '.merged // 0' response.json) — bevestigd: $(jq -r '.confirmed // 0' response.json) — mislukte reviewbatches: $(jq -r '.reviewErrors // 0' response.json)"
             echo ""
             echo "### Verwijderde topics"
             echo '```'
             jq -r 'if (.removedTitles | length) == 0 then "geen" else .removedTitles[] end' response.json
+            echo '```'
+            echo ""
+            echo "### Samengevoegde duplicaten"
+            echo '```'
+            jq -r 'if ((.mergedTitles // []) | length) == 0 then "geen" else .mergedTitles[] end' response.json
             echo '```'
             echo ""
             echo "### Fouten bij reviewbatches"
