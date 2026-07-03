@@ -1,4 +1,5 @@
 import { FeedList } from "@/components/topic/FeedList";
+import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublishedTopics } from "@/lib/data/topics";
 
 export default async function Home() {
@@ -6,8 +7,9 @@ export default async function Home() {
 
   if (items.length === 0) {
     return (
-      <div className="px-4 py-6">
-        <p className="text-sm" style={{ color: "var(--fg2)" }}>
+      <div>
+        <SectionTitle title="Nieuws" />
+        <p className="px-4 py-8 text-sm" style={{ color: "var(--fg2)" }}>
           De nieuwsfeed wordt hier getoond zodra de aggregatiepipeline draait.
         </p>
       </div>

@@ -3,22 +3,14 @@ import { truncate } from "@/lib/utils/text";
 import type { Topic } from "@/lib/types/database";
 import type { TopicComment, TopicDetail, TopicFeedItem, TopicSourceEntry, TopicTimelineEntry } from "@/lib/types/feed";
 
-const TEASER_MAX_LENGTH = 140;
+const TEASER_MAX_LENGTH = 160;
 
 function toFeedItem(topic: Topic, commentCount: number): TopicFeedItem {
   return {
     ...topic,
     teaser: truncate(topic.summary ?? "", TEASER_MAX_LENGTH),
     sourceCount: topic.item_count,
-    reactionCount: commentCount.toLocaleString("nl-NL"),
-    // Geen trending-signaal en geen beeldmateriaal in Fase 1 — eerlijker dan
-    // de mock-placeholders tonen wanneer we die data simpelweg niet hebben.
-    trend: null,
-    trendColor: null,
-    hasHero: false,
-    hasThumb: false,
-    imageCredit: null,
-    hasDetail: true,
+    commentCount,
   };
 }
 
@@ -63,7 +55,7 @@ export async function getPublishedTopics(): Promise<TopicFeedItem[]> {
 function formatShortDate(iso: string): string {
   const d = new Date(iso);
   const day = d.getUTCDate();
-  const month = d.toLocaleString("nl-NL", { month: "short", timeZone: "UTC" }).toUpperCase().replace(".", "");
+  const month = d.toLocaleString("nl-NL", { month: "short", timeZone: "UTC" }).replace(".", "");
   return `${day} ${month}`;
 }
 
@@ -113,9 +105,8 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
     source: row.sources as unknown as { name: string; tier: number } | null,
   }));
 
-  const timeline: TopicTimelineEntry[] = items.map((row, i) => ({
+  const timeline: TopicTimelineEntry[] = items.map((row) => ({
     date: formatShortDate(row.reported_at),
-    delta: i === 0 ? "1 bron" : "+1 bron",
     headline: contributionHeadline(row.contribution, row.source?.name ?? "onbekende bron"),
     snippet: row.snippet ?? "",
     confidence: row.confidence_at,
@@ -133,21 +124,16 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
       username: profile?.username ?? "anoniem",
       timeAgo: formatShortDate(row.created_at),
       body: row.body,
-      upvotes: 0,
       isAnonymous: !profile?.username,
     };
   });
 
-  const commentCount = comments.length;
-  const item = toFeedItem(topic, commentCount);
+  const item = toFeedItem(topic, comments.length);
 
   const detail: TopicDetail = {
-    summaryLines: topic.summary ? [{ source: "Ossenworst Manager", text: topic.summary }] : [],
     timeline,
     sources,
     comments,
-    imageCaption: "",
-    imageCredit: "",
     sagaStartedAt: topic.first_seen_at,
   };
 

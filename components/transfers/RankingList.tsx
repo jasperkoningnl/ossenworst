@@ -9,39 +9,41 @@ export interface RankingEntry {
 export function RankingList({
   title,
   entries,
-  color,
+  emptyText,
 }: {
   title: string;
   entries: RankingEntry[];
-  color: string;
+  emptyText: string;
 }) {
   return (
     <div>
       <div
-        className="flex items-center gap-2 border-b border-t px-3.5 py-1.5"
-        style={{ background: "var(--head)", borderColor: "var(--bd)" }}
+        className="border-b border-t px-4 py-2 text-[11px] font-bold uppercase tracking-wider"
+        style={{ background: "var(--head)", borderColor: "var(--bd)", color: "var(--fg-label)" }}
       >
-        <span className="h-3 w-[3px]" style={{ background: "#2C6FD6" }} />
-        <span className="font-mono text-[9px] tracking-wide" style={{ color: "var(--fg-label)" }}>
-          {title}
-        </span>
+        {title}
       </div>
+      {entries.length === 0 && (
+        <p className="px-4 py-4 text-[13px]" style={{ color: "var(--fg3)" }}>
+          {emptyText}
+        </p>
+      )}
       {entries.map((entry, i) => (
-        <div key={i} className="border-b px-3.5 py-1.5" style={{ borderColor: "var(--hair)" }}>
+        <div key={i} className="border-b px-4 py-2" style={{ borderColor: "var(--hair)" }}>
           <div className="mb-1 flex items-baseline justify-between">
-            <span className="text-sm" style={{ color: "var(--fg-strong)" }}>
+            <span className="text-[14px] font-semibold" style={{ color: "var(--fg-strong)" }}>
               {entry.label}
               {entry.sublabel && (
-                <span className="ml-1.5 font-mono text-[8px]" style={{ color: "var(--fg3)" }}>
+                <span className="ml-2 text-[10.5px] font-bold uppercase tracking-wide" style={{ color: "var(--fg3)" }}>
                   {entry.sublabel}
                 </span>
               )}
             </span>
-            <span className="font-mono text-[11px] font-bold" style={{ color }}>
+            <span className="font-mono text-[13px] font-bold" style={{ color: "var(--ajax-red)" }}>
               {entry.pct}%
             </span>
           </div>
-          <ProgressBar pct={entry.pct} color={color} />
+          <ProgressBar pct={entry.pct} color="var(--ajax-red)" />
         </div>
       ))}
     </div>

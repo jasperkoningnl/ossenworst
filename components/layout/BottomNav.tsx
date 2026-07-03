@@ -64,24 +64,26 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 mx-auto flex h-[60px] max-w-md border-t"
-      style={{ background: "var(--bar)", borderColor: "var(--bd)" }}
+      className="fixed inset-x-0 bottom-0 z-20 mx-auto flex h-[62px] max-w-md border-t-2"
+      style={{ background: "var(--bar)", borderColor: "var(--ajax-red)" }}
     >
       {NAV_ITEMS.map((item) => {
         const active = isActive(pathname, item.href);
-        const color = active ? "#D2122E" : "var(--fg3)";
         return (
           <Link
             key={item.href}
             href={item.href}
             className="flex flex-1 flex-col items-center justify-center gap-1"
-            style={{ color, borderTop: `2px solid ${active ? "#D2122E" : "transparent"}` }}
+            style={{
+              color: active ? "#fff" : "var(--fg3)",
+              background: active ? "var(--ajax-red)" : "transparent",
+            }}
             aria-current={active ? "page" : undefined}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
               {item.icon}
             </svg>
-            <span className="font-mono text-[7.5px] font-semibold tracking-wide">{item.label.toUpperCase()}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide">{item.label}</span>
           </Link>
         );
       })}

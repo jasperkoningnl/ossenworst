@@ -1,104 +1,60 @@
 import Link from "next/link";
-import { CATEGORY_COLORS, categoryTextColor } from "@/lib/theme/colors";
+import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/theme/colors";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import type { TopicFeedItem } from "@/lib/types/feed";
 
-function formatTimestamp(iso: string) {
+/** "Zojuist", "12 min", "3 uur", of anders een korte datum. */
+function relativeTime(iso: string): string {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (minutes < 2) return "zojuist";
+  if (minutes < 60) return `${minutes} min geleden`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} uur geleden`;
   const d = new Date(iso);
-  const day = d.getUTCDate();
-  const month = d.toLocaleString("nl-NL", { month: "short", timeZone: "UTC" }).toUpperCase().replace(".", "");
-  const time = `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
-  return `${day} ${month} ${time}`;
+  const month = d.toLocaleString("nl-NL", { month: "short", timeZone: "UTC" }).replace(".", "");
+  return `${d.getUTCDate()} ${month}`;
 }
 
-const placeholderStripes = {
-  background:
-    "repeating-linear-gradient(135deg,var(--track) 0,var(--track) 9px,var(--stripe-b) 9px,var(--stripe-b) 18px)",
-};
-
-export function TopicCard({ item, index }: { item: TopicFeedItem; index: number }) {
-  const rowBg = index % 2 === 0 ? "var(--surfa)" : "var(--surfb)";
+export function TopicCard({ item }: { item: TopicFeedItem }) {
   const spine = CATEGORY_COLORS[item.category];
 
   return (
     <Link
       href={`/topic/${item.slug}`}
-      className="flex w-full border-b text-left"
-      style={{ background: rowBg, borderColor: "var(--hair2)" }}
+      className="flex w-full border-b bg-white text-left"
+      style={{ background: "var(--surfa)", borderColor: "var(--hair2)" }}
     >
-      <div className="w-1 flex-none" style={{ background: spine }} />
-      <div className="min-w-0 flex-1">
-        {item.hasHero && (
-          <div
-            className="relative flex h-[150px] items-center justify-center border-b"
-            style={{ ...placeholderStripes, borderColor: "var(--hair)" }}
-          >
-            <span
-              className="absolute left-2.5 top-2 rounded-sm px-1.5 py-0.5 font-mono text-[7.5px] font-bold tracking-wide text-white"
-              style={{ background: "#D2122E" }}
-            >
-              FOTO
-            </span>
-            {item.imageCredit && (
-              <span
-                className="absolute bottom-2 right-2.5 rounded-sm px-1.5 py-0.5 font-mono text-[7.5px]"
-                style={{ color: "var(--fg3)", background: "var(--bg)" }}
-              >
-                {item.imageCredit}
-              </span>
-            )}
-          </div>
+      <div className="w-[5px] flex-none" style={{ background: spine }} />
+      <div className="min-w-0 flex-1 px-4 py-3.5">
+        <div className="mb-1.5 flex items-center gap-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: spine }}>
+            {CATEGORY_LABEL[item.category] ?? item.category}
+          </span>
+          <ConfidenceBadge confidence={item.confidence} />
+          <span className="ml-auto whitespace-nowrap text-[11px]" style={{ color: "var(--fg5)" }}>
+            {relativeTime(item.last_activity_at)}
+          </span>
+        </div>
+        <h2 className="mb-1 text-[17px] font-bold leading-snug" style={{ color: "var(--fg-hi)" }}>
+          {item.title}
+        </h2>
+        {item.teaser && (
+          <p className="mb-2 text-[13.5px] leading-normal" style={{ color: "var(--fg2)" }}>
+            {item.teaser}
+          </p>
         )}
-        <div className="px-3.5 pb-2.5 pt-2.5">
-          <div className="mb-1.5 flex items-center gap-1.5">
-            <span
-              className="rounded-sm px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wide"
-              style={{ background: spine, color: categoryTextColor(item.category) }}
-            >
-              {item.category}
+        <div className="flex items-center gap-3 text-[11.5px] font-semibold" style={{ color: "var(--fg3)" }}>
+          <span>
+            {item.sourceCount} {item.sourceCount === 1 ? "bron" : "bronnen"}
+          </span>
+          {item.commentCount > 0 && (
+            <span>
+              {item.commentCount} {item.commentCount === 1 ? "reactie" : "reacties"}
             </span>
-            <ConfidenceBadge confidence={item.confidence} />
-            <span className="ml-auto whitespace-nowrap font-mono text-[8px]" style={{ color: "var(--fg5)" }}>
-              {formatTimestamp(item.last_activity_at)}
-            </span>
-          </div>
-          <div className="flex items-start gap-2.5">
-            <div className="min-w-0 flex-1">
-              <div className="mb-0.5 text-base font-semibold leading-tight" style={{ color: "var(--fg)" }}>
-                {item.title}
-              </div>
-              <div className="mb-2 text-[12.5px] leading-tight" style={{ color: "var(--fg2)" }}>
-                {item.teaser}
-              </div>
-            </div>
-            {item.hasThumb && (
-              <div
-                className="relative h-[62px] w-[62px] flex-none overflow-hidden rounded border"
-                style={{ ...placeholderStripes, borderColor: "var(--bd2)" }}
-              >
-                <span
-                  className="absolute left-1 top-[3px] font-mono text-[6px] font-bold tracking-wide"
-                  style={{ color: "var(--fg3)" }}
-                >
-                  FOTO
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-3 font-mono text-[8.5px]" style={{ color: "var(--fg3)" }}>
-            <span>▣ {item.sourceCount}</span>
-            <span>↳ {item.reactionCount}</span>
-            {item.trend && (
-              <span className="ml-auto font-bold" style={{ color: item.trendColor ?? undefined }}>
-                {item.trend}
-              </span>
-            )}
-            {item.hasDetail && (
-              <span className="font-bold" style={{ color: "#E8485F" }}>
-                ▸ TIJDLIJN
-              </span>
-            )}
-          </div>
+          )}
+          <span className="ml-auto font-bold" style={{ color: "var(--ajax-red)" }}>
+            Tijdlijn ›
+          </span>
         </div>
       </div>
     </Link>

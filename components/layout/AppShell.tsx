@@ -9,9 +9,12 @@ import { BottomNav } from "./BottomNav";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col" style={{ background: "var(--bg)" }}>
+    <div
+      className="mx-auto flex min-h-screen max-w-md flex-col border-x"
+      style={{ background: "var(--bg)", borderColor: "var(--frame)" }}
+    >
       <Header />
-      <main className="flex-1 pb-[60px]">{children}</main>
+      <main className="flex-1 pb-[62px]">{children}</main>
       <BottomNav />
     </div>
   );
