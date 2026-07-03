@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Source } from "@/lib/types/database";
 import { isTooOld } from "@/lib/pipeline/relevance";
+import type { ParsedFeedItem } from "./rss";
 
 export interface ScrapeConfig {
   listUrl: string;
@@ -12,13 +13,13 @@ export interface ScrapeConfig {
   dateSelector?: string;
   dateAttribute?: string;
   linkAttribute?: string;
+  /** Selector voor de artikelafbeelding binnen articleSelector (standaard "img"). */
+  imageSelector?: string;
+  /** Attribuut met de afbeeldings-URL (standaard "src", vaak "data-src" bij lazy loading). */
+  imageAttribute?: string;
 }
 
 const USER_AGENT = "OssenworstManager/1.0 (+https://ossenworst.nl)";
-
-function externalIdFor(url: string, title: string): string {
-  return url || title || crypto.randomUUID();
-}
 
 function resolveUrl(href: string, baseUrl: string): string {
   try {
@@ -28,14 +29,9 @@ function resolveUrl(href: string, baseUrl: string): string {
   }
 }
 
-function extractArticles(html: string, config: ScrapeConfig, baseUrl: string) {
+function extractArticles(html: string, config: ScrapeConfig, baseUrl: string, language: string): ParsedFeedItem[] {
   const $ = cheerio.load(html);
-  const articles: {
-    url: string;
-    title: string;
-    body: string | null;
-    published_at: string | null;
-  }[] = [];
+  const articles: ParsedFeedItem[] = [];
 
   $(config.articleSelector).each((_i, el) => {
     const $el = $(el);
@@ -67,33 +63,56 @@ function extractArticles(html: string, config: ScrapeConfig, baseUrl: string) {
       }
     }
 
-    articles.push({ url, title, body: snippet, published_at });
+    const imageEl = $el.find(config.imageSelector ?? "img").first();
+    const rawImage =
+      imageEl.attr(config.imageAttribute ?? "src") ??
+      imageEl.attr("data-src") ??
+      imageEl.attr("srcset")?.split(/\s+/)[0];
+    const image_url = rawImage ? resolveUrl(rawImage, baseUrl) : null;
+
+    articles.push({
+      external_id: url || title,
+      url,
+      title,
+      body: snippet,
+      published_at,
+      language,
+      publisher_name: null,
+      image_url,
+    });
   });
 
   return articles;
+}
+
+/**
+ * Haalt en normaliseert de artikelen van een scrape-bron zónder iets op te
+ * slaan. Archiefpagina's kunnen oude artikelen tonen; alleen actuele items
+ * blijven over. Gedeeld door de echte fetch en de broncheck (dry-run).
+ */
+export async function parseScrapeSource(source: Source): Promise<ParsedFeedItem[]> {
+  const config = source.scrape_config as ScrapeConfig | null;
+  if (!config?.listUrl) throw new Error("geen scrape_config.listUrl ingesteld");
+
+  const res = await fetch(config.listUrl, {
+    headers: { "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const html = await res.text();
+
+  return extractArticles(html, config, config.listUrl, source.language).filter(
+    (a) => !isTooOld(a.published_at)
+  );
 }
 
 export async function fetchScrapeSource(
   supabase: SupabaseClient,
   source: Source
 ) {
-  const config = source.scrape_config as ScrapeConfig | null;
-  if (!config?.listUrl) {
-    await supabase
-      .from("sources")
-      .update({ last_status: "geen scrape_config.listUrl ingesteld" })
-      .eq("id", source.id);
-    return { inserted: 0 };
-  }
-
-  let html: string;
+  let articles: ParsedFeedItem[];
   try {
-    const res = await fetch(config.listUrl, {
-      headers: { "User-Agent": USER_AGENT },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    html = await res.text();
+    articles = await parseScrapeSource(source);
   } catch (err) {
     await supabase
       .from("sources")
@@ -104,11 +123,6 @@ export async function fetchScrapeSource(
       .eq("id", source.id);
     throw err;
   }
-
-  // Archiefpagina's kunnen oude artikelen tonen; alleen actuele items ingesten.
-  const articles = extractArticles(html, config, config.listUrl).filter(
-    (a) => !isTooOld(a.published_at)
-  );
 
   if (articles.length === 0) {
     await supabase
@@ -121,15 +135,7 @@ export async function fetchScrapeSource(
     return { inserted: 0 };
   }
 
-  const rows = articles.map((a) => ({
-    source_id: source.id,
-    external_id: externalIdFor(a.url, a.title),
-    url: a.url,
-    title: a.title,
-    body: a.body,
-    published_at: a.published_at,
-    language: source.language,
-  }));
+  const rows = articles.map((a) => ({ source_id: source.id, ...a }));
 
   const { data: insertedRows, error } = await supabase
     .from("raw_items")

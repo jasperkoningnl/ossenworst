@@ -1,0 +1,55 @@
+name: Check source
+
+# Handmatig te starten: kwaliteitscheck van één bron (dry-run) voor de
+# gecontroleerde opbouw van de feed. Rapporteert of de bron berichten ophaalt,
+# of ze recent zijn, of er intro's en afbeeldingen meekomen en of de links
+# naar de bron zelf wijzen. Met "enable" aangevinkt wordt de bron direct
+# ingeschakeld als de kerncriteria slagen.
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "Bron-slug (zie lib/sources/sources.seed.ts, bv. nos-sport)"
+        required: true
+      enable:
+        description: "Bron inschakelen als de check slaagt"
+        type: boolean
+        default: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check de bron
+        run: |
+          HTTP_CODE=$(curl -s --max-time 60 -o response.json -w '%{http_code}' \
+            -X POST "${{ vars.APP_URL }}/api/admin/check-source?slug=${{ inputs.slug }}&enable=${{ inputs.enable }}" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+          echo "HTTP $HTTP_CODE"
+          jq . response.json 2>/dev/null || cat response.json
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::check-source gaf HTTP $HTTP_CODE — zie de response hierboven"
+            exit 1
+          fi
+          {
+            echo "## Check source: $(jq -r '.name // .slug' response.json)"
+            echo ""
+            if [ "$(jq -r '.ok' response.json)" = "true" ]; then
+              echo "**Resultaat: GESLAAGD** — ingeschakeld: $(jq -r '.enabled' response.json)"
+            else
+              echo "**Resultaat: NIET GESLAAGD** — $(jq -r '.error // "zie checks"' response.json)"
+            fi
+            echo ""
+            echo "| Check | Status |"
+            echo "|---|---|"
+            jq -r '.checks | to_entries[] | "| \(.key) | \(if .value then "✅" else "❌" end) |"' response.json
+            echo ""
+            echo "| Statistiek | Aantal |"
+            echo "|---|---|"
+            jq -r '(.stats // {}) | to_entries[] | "| \(.key) | \(.value) |"' response.json
+            echo ""
+            echo "### Voorbeelditems"
+            echo '```'
+            jq -r '(.sample // [])[] | "\(.published_at // "geen datum") | intro \(.introChars) tekens | afbeelding: \(.afbeelding) | \(.title)\n  \(.url)"' response.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

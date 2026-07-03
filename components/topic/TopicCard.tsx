@@ -35,14 +35,28 @@ export function TopicCard({ item }: { item: TopicFeedItem }) {
             {relativeTime(item.last_activity_at)}
           </span>
         </div>
-        <h2 className="mb-1 text-[17px] font-bold leading-snug" style={{ color: "var(--fg-hi)" }}>
-          {item.title}
-        </h2>
-        {item.teaser && (
-          <p className="mb-2 text-[13.5px] leading-normal" style={{ color: "var(--fg2)" }}>
-            {item.teaser}
-          </p>
-        )}
+        <div className="mb-2 flex gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="mb-1 text-[17px] font-bold leading-snug" style={{ color: "var(--fg-hi)" }}>
+              {item.title}
+            </h2>
+            {item.teaser && (
+              <p className="text-[13.5px] leading-normal" style={{ color: "var(--fg2)" }}>
+                {item.teaser}
+              </p>
+            )}
+          </div>
+          {item.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- externe nieuwsafbeeldingen, domeinen onbekend
+            <img
+              src={item.imageUrl}
+              alt=""
+              loading="lazy"
+              className="h-[72px] w-[96px] flex-none rounded-md border object-cover"
+              style={{ borderColor: "var(--bd)" }}
+            />
+          )}
+        </div>
         <div className="flex items-center gap-3 text-[11.5px] font-semibold" style={{ color: "var(--fg3)" }}>
           <span>
             {item.sourceCount} {item.sourceCount === 1 ? "bron" : "bronnen"}

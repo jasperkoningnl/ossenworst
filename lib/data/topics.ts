@@ -17,11 +17,12 @@ const TEASER_MAX_LENGTH = 200;
 // zijn binnengekomen.
 const MAX_FEED_AGE_DAYS = 30;
 
-/** Kop, intro, link en bronnaam van het meest recente item van een topic. */
+/** Kop, intro, link, afbeelding en bronnaam van het meest recente item van een topic. */
 interface LatestItemInfo {
   title: string | null;
   body: string | null;
   url: string | null;
+  imageUrl: string | null;
   sourceName: string | null;
 }
 
@@ -55,12 +56,14 @@ function latestInfoFromRow(row: TopicItemRow): LatestItemInfo {
     body: string | null;
     url: string;
     publisher_name: string | null;
+    image_url: string | null;
   } | null;
   const source = row.sources as { name: string } | null;
   return {
     title: rawItem?.title ?? null,
     body: rawItem?.body ?? null,
     url: rawItem?.url ?? null,
+    imageUrl: rawItem?.image_url ?? null,
     sourceName: sourceDisplayName(
       rawItem?.publisher_name ?? null,
       source?.name ?? null,
@@ -82,7 +85,7 @@ async function fetchLatestItems(
 
   const { data: rows, error } = await supabase
     .from("topic_items")
-    .select("topic_id, reported_at, raw_items(title, body, url, publisher_name), sources(name)")
+    .select("topic_id, reported_at, raw_items(title, body, url, publisher_name, image_url), sources(name)")
     .in("topic_id", topicIds)
     .order("reported_at", { ascending: false });
   // Niet fataal (de feed valt terug op topic-titel/samenvatting), maar wél
@@ -102,6 +105,7 @@ function toFeedItem(topic: Topic, latest: LatestItemInfo | undefined, commentCou
     title: latest?.title ?? topic.title,
     // Alinea-witruimte plat slaan: de teaser is één doorlopende feed-regel.
     teaser: truncate((latest?.body ?? topic.summary ?? "").replace(/\s+/g, " "), TEASER_MAX_LENGTH),
+    imageUrl: latest?.imageUrl ?? null,
     sourceCount: topic.item_count,
     commentCount,
   };
@@ -184,7 +188,7 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
     supabase
       .from("topic_items")
       .select(
-        "snippet, reported_at, contribution, confidence_at, sources(name, tier), raw_items(title, body, url, publisher_name)"
+        "snippet, reported_at, contribution, confidence_at, sources(name, tier), raw_items(title, body, url, publisher_name, image_url)"
       )
       .eq("topic_id", topic.id)
       .order("reported_at", { ascending: true }),
@@ -209,6 +213,7 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
       body: string | null;
       url: string;
       publisher_name: string | null;
+      image_url: string | null;
     } | null,
   }));
 
@@ -241,6 +246,7 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
         title: latestRow.rawItem?.title ?? null,
         body: latestRow.rawItem?.body ?? null,
         url: latestRow.rawItem?.url ?? null,
+        imageUrl: latestRow.rawItem?.image_url ?? null,
         sourceName: latestRow ? displayName(latestRow) : null,
       }
     : undefined;
@@ -248,7 +254,12 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   const introText = latest?.body ?? latestRow?.snippet ?? topic.summary;
   const intro: TopicIntro | null =
     latest && introText
-      ? { text: introText, sourceName: latest.sourceName ?? "onbekende bron", url: latest.url }
+      ? {
+          text: introText,
+          sourceName: latest.sourceName ?? "onbekende bron",
+          url: latest.url,
+          imageUrl: latest.imageUrl,
+        }
       : null;
 
   const comments: TopicComment[] = (commentRows ?? []).map((row) => {

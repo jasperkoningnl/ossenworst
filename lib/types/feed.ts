@@ -5,6 +5,8 @@ import type { ConfidenceLevel } from "@/lib/types/enums";
 export interface TopicFeedItem extends Topic {
   /** Korte teaser voor de feed-rij: de intro van de meest recente bron. */
   teaser: string;
+  /** Afbeelding van de meest recente bron (thumbnail in de feed). */
+  imageUrl: string | null;
   sourceCount: number;
   commentCount: number;
 }
@@ -29,6 +31,7 @@ export interface TopicIntro {
   text: string;
   sourceName: string;
   url: string | null;
+  imageUrl: string | null;
 }
 
 export interface TopicComment {

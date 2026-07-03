@@ -82,6 +82,29 @@ News-URL's van al-verwerkte items alsnog naar de originele publisher-URL,
 vult publishernamen aan en haalt ontbrekende artikel-intro's op. Per run
 wordt een batch verwerkt; draai opnieuw zolang `remaining` > 0.
 
+### Gecontroleerde opbouw van de bronnenlijst
+
+De feed wordt bron voor bron opgebouwd; Google News-bronnen staan volledig
+uit en zijn hooguit een laatste redmiddel voor paywalled media. Het proces:
+
+1. **"Reset feed"**-workflow (typ `LEEG` ter bevestiging): wist alle topics,
+   items en jobs. Bronnen en FM-data blijven staan; de eerstvolgende tick
+   haalt alle actieve bronnen vers op.
+2. Alleen bronnen met een geverifieerd werkende feed staan aan (zie
+   `enabled: true` in `lib/sources/sources.seed.ts`): Ajax.nl (officieel,
+   scrape), NOS Sport, Ajax Supporters, The Guardian, BBC Sport en Kicker.
+3. Nieuwe bron toevoegen? Draai de **"Check source"**-workflow met de
+   bron-slug. Die doet een dry-run en rapporteert: haalt hij berichten op,
+   zijn ze recent, komen er intro's en afbeeldingen mee, en linken de items
+   naar de bron zelf (niet naar Google News). Vink *enable* aan om de bron
+   direct in te schakelen als de kerncriteria slagen.
+4. Faalt de check (dode feed, kapotte selectors), fix dan eerst de
+   `feed_url`/`scrape_config` in `sources.seed.ts`, draai "Seed sources" en
+   check opnieuw.
+
+Zo voldoet elke actieve bron aantoonbaar aan: werkende feed of scrape,
+intro's en afbeeldingen, correcte bronlinks, en actuele berichten.
+
 ### Actualiteit
 
 De feed toont alleen actueel nieuws:
@@ -144,12 +167,10 @@ minuten (GitHub kan schedules onder hoge load vertragen/overslaan; voor een
 nieuwsfeed is dat geen probleem). Handmatig testen kan via *Run workflow* in de
 Actions-tab.
 
-**Bronnen met een echte feed_url:** alleen NOS Voetbal
-(`https://feeds.nos.nl/nosvoetbal`) is voorlopig geverifieerd en `enabled` in
-`lib/sources/sources.seed.ts`. De overige bronnen krijgen pas effect zodra je
-zelf een echte `feed_url` toevoegt (in `sources.seed.ts` + opnieuw de
-"Seed sources"-workflow draaien, of rechtstreeks in de `sources`-tabel) en
-`enabled` op `true` zet.
+**Actieve bronnen:** zie `enabled: true` in `lib/sources/sources.seed.ts`.
+Nieuwe bronnen gaan via de "Check source"-workflow aan (zie *Gecontroleerde
+opbouw van de bronnenlijst* hieronder), niet door blind `enabled` om te
+zetten.
 
 ## FM-features (opstelling, transferlijst, verlanglijst, reacties)
 

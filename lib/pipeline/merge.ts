@@ -21,7 +21,7 @@ const MAX_CANDIDATES = 30;
 export async function mergeRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error: rawItemError } = await supabase
     .from("raw_items")
-    .select("id, source_id, title, body, url, published_at, processing_status, topic_id, publisher_name, enriched_at, sources(name, tier, slug)")
+    .select("id, source_id, title, body, url, published_at, processing_status, topic_id, publisher_name, image_url, enriched_at, sources(name, tier, slug)")
     .eq("id", rawItemId)
     .single();
   if (rawItemError) throw rawItemError;

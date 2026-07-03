@@ -50,7 +50,7 @@ async function enrichItems() {
 
   const { data: items, error } = await supabase
     .from("raw_items")
-    .select("id, url, body, language, publisher_name, enriched_at, sources(slug)")
+    .select("id, url, body, language, publisher_name, image_url, enriched_at, sources(slug)")
     .not("topic_id", "is", null)
     .or("enriched_at.is.null,url.ilike.%news.google.com%")
     .order("fetched_at", { ascending: false })
@@ -81,6 +81,7 @@ async function enrichItems() {
           // de weergavenaam ook als de URL-herleiding faalt.
           publisher_name:
             item.publisher_name ?? (source?.slug ? PUBLISHER_BY_SLUG[source.slug] ?? null : null),
+          image_url: item.image_url,
           // Herleiding opnieuw proberen voor items die nog op Google News wijzen.
           enriched_at: wasGoogle ? null : item.enriched_at,
         },

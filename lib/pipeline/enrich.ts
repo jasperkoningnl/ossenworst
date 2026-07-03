@@ -24,6 +24,7 @@ export interface EnrichableRawItem {
   url: string;
   body: string | null;
   publisher_name: string | null;
+  image_url: string | null;
   enriched_at: string | null;
 }
 
@@ -44,6 +45,7 @@ export async function enrichRawItem(
   let url = rawItem.url;
   let body = rawItem.body;
   let publisherName = rawItem.publisher_name;
+  let imageUrl = rawItem.image_url;
   const cameViaGoogleNews = isGoogleNewsUrl(rawItem.url);
 
   if (cameViaGoogleNews) {
@@ -58,13 +60,14 @@ export async function enrichRawItem(
   const needsIntro = !options.skipIntro && (!body || body.length < MIN_BODY_CHARS);
   // Zonder herleide URL heeft fetchen geen zin: de Google News-pagina zelf
   // bevat geen artikeltekst.
-  if (needsIntro && !isGoogleNewsUrl(url)) {
+  if ((needsIntro || !imageUrl) && !isGoogleNewsUrl(url)) {
     try {
-      const { intro, siteName } = await fetchArticleIntro(url);
-      if (intro && intro.length > (body?.length ?? 0)) {
-        body = truncate(intro, MAX_BODY_CHARS);
+      const article = await fetchArticleIntro(url);
+      if (needsIntro && article.intro && article.intro.length > (body?.length ?? 0)) {
+        body = truncate(article.intro, MAX_BODY_CHARS);
       }
-      if (siteName && !publisherName) publisherName = siteName;
+      if (article.siteName && !publisherName) publisherName = article.siteName;
+      if (article.imageUrl && !imageUrl) imageUrl = article.imageUrl;
     } catch (err) {
       console.error(`Artikel-intro ophalen mislukt voor ${rawItem.id}:`, err);
     }
@@ -81,6 +84,7 @@ export async function enrichRawItem(
       url,
       body,
       publisher_name: publisherName,
+      image_url: imageUrl,
       enriched_at: new Date().toISOString(),
     })
     .eq("id", rawItem.id);

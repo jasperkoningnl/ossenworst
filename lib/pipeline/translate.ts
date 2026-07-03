@@ -11,7 +11,7 @@ import { enrichRawItem } from "@/lib/pipeline/enrich";
 export async function translateRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error } = await supabase
     .from("raw_items")
-    .select("id, title, body, url, language, publisher_name, enriched_at, sources(slug)")
+    .select("id, title, body, url, language, publisher_name, image_url, enriched_at, sources(slug)")
     .eq("id", rawItemId)
     .single();
   if (error) throw error;

@@ -16,6 +16,16 @@ export function SourceIntroCard({ intro }: { intro: TopicIntro }) {
           Volgens {intro.sourceName}
         </span>
       </div>
+      {intro.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- externe nieuwsafbeeldingen, domeinen onbekend
+        <img
+          src={intro.imageUrl}
+          alt=""
+          loading="lazy"
+          className="max-h-56 w-full border-b object-cover"
+          style={{ borderColor: "var(--bd)" }}
+        />
+      )}
       <div className="px-4 py-3.5">
         <p className="whitespace-pre-line text-[14.5px] leading-relaxed" style={{ color: "var(--fg-body)" }}>
           {intro.text}
