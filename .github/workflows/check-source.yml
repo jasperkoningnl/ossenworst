@@ -1,18 +1,20 @@
-name: Check source
+name: Check sources
 
-# Handmatig te starten: kwaliteitscheck van één bron (dry-run) voor de
-# gecontroleerde opbouw van de feed. Rapporteert of de bron berichten ophaalt,
-# of ze recent zijn, of er intro's en afbeeldingen meekomen en of de links
-# naar de bron zelf wijzen. Met "enable" aangevinkt wordt de bron direct
-# ingeschakeld als de kerncriteria slagen.
+# Handmatig te starten: kwaliteitscheck van bronnen (dry-run) voor de
+# gecontroleerde opbouw van de feed. Zonder slug worden ALLE bronnen met een
+# feed of scrape-config gecheckt (Google News uitgezonderd). Per bron:
+# haalt hij berichten op, zijn ze recent, komen er intro's en afbeeldingen
+# mee, en linken de items naar de bron zelf. Met "enable" aangevinkt worden
+# geslaagde bronnen ingeschakeld en bronnen die niets ophalen uitgeschakeld.
 on:
   workflow_dispatch:
     inputs:
       slug:
-        description: "Bron-slug (zie lib/sources/sources.seed.ts, bv. nos-sport)"
-        required: true
+        description: "Bron-slug (leeg = alle bronnen checken)"
+        required: false
+        default: ""
       enable:
-        description: "Bron inschakelen als de check slaagt"
+        description: "Geslaagde bronnen inschakelen (en kapotte uitschakelen)"
         type: boolean
         default: false
 
@@ -20,9 +22,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check de bron
+      - name: Check bron(nen)
         run: |
-          HTTP_CODE=$(curl -s --max-time 60 -o response.json -w '%{http_code}' \
+          HTTP_CODE=$(curl -s --max-time 300 -o response.json -w '%{http_code}' \
             -X POST "${{ vars.APP_URL }}/api/admin/check-source?slug=${{ inputs.slug }}&enable=${{ inputs.enable }}" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
           echo "HTTP $HTTP_CODE"
@@ -31,25 +33,37 @@ jobs:
             echo "::error::check-source gaf HTTP $HTTP_CODE — zie de response hierboven"
             exit 1
           fi
-          {
-            echo "## Check source: $(jq -r '.name // .slug' response.json)"
-            echo ""
-            if [ "$(jq -r '.ok' response.json)" = "true" ]; then
-              echo "**Resultaat: GESLAAGD** — ingeschakeld: $(jq -r '.enabled' response.json)"
-            else
-              echo "**Resultaat: NIET GESLAAGD** — $(jq -r '.error // "zie checks"' response.json)"
-            fi
-            echo ""
-            echo "| Check | Status |"
-            echo "|---|---|"
-            jq -r '.checks | to_entries[] | "| \(.key) | \(if .value then "✅" else "❌" end) |"' response.json
-            echo ""
-            echo "| Statistiek | Aantal |"
-            echo "|---|---|"
-            jq -r '(.stats // {}) | to_entries[] | "| \(.key) | \(.value) |"' response.json
-            echo ""
-            echo "### Voorbeelditems"
-            echo '```'
-            jq -r '(.sample // [])[] | "\(.published_at // "geen datum") | intro \(.introChars) tekens | afbeelding: \(.afbeelding) | \(.title)\n  \(.url)"' response.json
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          if jq -e '.results' response.json > /dev/null; then
+            {
+              echo "## Check sources (alle bronnen)"
+              echo ""
+              echo "Gecheckt: $(jq -r '.checked' response.json) — geslaagd: $(jq -r '.passed' response.json) — gefaald: $(jq -r '.failed' response.json) — nu ingeschakeld: $(jq -r '.enabledNow' response.json) — nu uitgeschakeld: $(jq -r '.disabledNow' response.json)"
+              echo ""
+              echo "| Bron | OK | Aan | Items | Recent 7d | Intro | Afbeelding | Fout |"
+              echo "|---|---|---|---|---|---|---|---|"
+              jq -r '.results[] | "| \(.name) | \(if .ok then "✅" else "❌" end) | \(if .enabled then "🟢" else "⚪" end) | \(.stats.items // 0) | \(.stats.recent7d // 0) | \(.stats.metIntro // 0) | \(.stats.metAfbeelding // 0) | \(.error // "") |"' response.json
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## Check source: $(jq -r '.name // .slug' response.json)"
+              echo ""
+              if [ "$(jq -r '.ok' response.json)" = "true" ]; then
+                echo "**Resultaat: GESLAAGD** — ingeschakeld: $(jq -r '.enabled' response.json)"
+              else
+                echo "**Resultaat: NIET GESLAAGD** — $(jq -r '.error // "zie checks"' response.json)"
+              fi
+              echo ""
+              echo "| Check | Status |"
+              echo "|---|---|"
+              jq -r '.checks | to_entries[] | "| \(.key) | \(if .value then "✅" else "❌" end) |"' response.json
+              echo ""
+              echo "| Statistiek | Aantal |"
+              echo "|---|---|"
+              jq -r '(.stats // {}) | to_entries[] | "| \(.key) | \(.value) |"' response.json
+              echo ""
+              echo "### Voorbeelditems"
+              echo '```'
+              jq -r '(.sample // [])[] | "\(.published_at // "geen datum") | intro \(.introChars) tekens | afbeelding: \(.afbeelding) | \(.title)\n  \(.url)"' response.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

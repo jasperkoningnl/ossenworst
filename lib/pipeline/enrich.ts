@@ -36,7 +36,15 @@ export interface EnrichedFields {
 export async function enrichRawItem(
   supabase: SupabaseClient,
   rawItem: EnrichableRawItem,
-  options: { skipIntro?: boolean } = {}
+  options: {
+    skipIntro?: boolean;
+    /**
+     * Herstelmodus: haal de intro opnieuw van de artikelpagina en verváng de
+     * huidige body door de verse extractie — voor items waarvan een eerdere
+     * (slechtere) extractie verkeerde tekst opsloeg.
+     */
+    forceIntro?: boolean;
+  } = {}
 ): Promise<EnrichedFields> {
   if (rawItem.enriched_at) {
     return { url: rawItem.url, body: rawItem.body };
@@ -57,13 +65,18 @@ export async function enrichRawItem(
     }
   }
 
-  const needsIntro = !options.skipIntro && (!body || body.length < MIN_BODY_CHARS);
+  const needsIntro =
+    !options.skipIntro && (options.forceIntro || !body || body.length < MIN_BODY_CHARS);
   // Zonder herleide URL heeft fetchen geen zin: de Google News-pagina zelf
   // bevat geen artikeltekst.
   if ((needsIntro || !imageUrl) && !isGoogleNewsUrl(url)) {
     try {
       const article = await fetchArticleIntro(url);
-      if (needsIntro && article.intro && article.intro.length > (body?.length ?? 0)) {
+      if (
+        needsIntro &&
+        article.intro &&
+        (options.forceIntro || article.intro.length > (body?.length ?? 0))
+      ) {
         body = truncate(article.intro, MAX_BODY_CHARS);
       }
       if (article.siteName && !publisherName) publisherName = article.siteName;

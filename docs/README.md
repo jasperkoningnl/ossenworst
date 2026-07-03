@@ -91,17 +91,26 @@ uit en zijn hooguit een laatste redmiddel voor paywalled media. Het proces:
 1. **"Reset feed"**-workflow (typ `LEEG` ter bevestiging): wist alle topics,
    items en jobs. Bronnen en FM-data blijven staan; de eerstvolgende tick
    haalt alle actieve bronnen vers op.
-2. Alleen bronnen met een geverifieerd werkende feed staan aan (zie
-   `enabled: true` in `lib/sources/sources.seed.ts`): Ajax.nl (officieel,
-   scrape), NOS Sport, Ajax Supporters, The Guardian, BBC Sport en Kicker.
-3. Nieuwe bron toevoegen? Draai de **"Check source"**-workflow met de
-   bron-slug. Die doet een dry-run en rapporteert: haalt hij berichten op,
-   zijn ze recent, komen er intro's en afbeeldingen mee, en linken de items
-   naar de bron zelf (niet naar Google News). Vink *enable* aan om de bron
-   direct in te schakelen als de kerncriteria slagen.
-4. Faalt de check (dode feed, kapotte selectors), fix dan eerst de
+2. Alle directe feeds uit het feed-onderzoek
+   (`docs/ossenworst-manager-sources.json`, status verified/found) staan aan
+   in `lib/sources/sources.seed.ts` — 39 bronnen, waaronder Ajax.nl
+   (officieel, scrape), NOS, Ajax Supporters, Ajax Freaks, KNVB, Reddit en
+   de internationale sportmedia. Uitzonderingen: Voetbalprimeur en TalkSPORT
+   (hun "feed"-URL is een HTML-overzichtspagina; echte XML-URL nog nodig).
+3. **"Check sources"**-workflow zonder slug checkt ál die bronnen in één
+   dry-run: haalt hij berichten op, zijn ze recent, komen er intro's en
+   afbeeldingen mee, en linken de items naar de bron zelf (niet naar Google
+   News). Met *enable* aangevinkt worden geslaagde bronnen ingeschakeld en
+   bronnen die niets ophalen uitgeschakeld. Met een slug check je één bron
+   in detail (incl. voorbeelditems).
+4. Faalt een bron (dode feed, kapotte selectors), fix dan de
    `feed_url`/`scrape_config` in `sources.seed.ts`, draai "Seed sources" en
    check opnieuw.
+5. **"Enrich items"** met *force* aangevinkt is de herstelmodus: bestaande
+   intro's van NL-items (scrape-bronnen en korte bodies) worden opnieuw van
+   de artikelpagina geëxtraheerd en vervangen — voor items waarvan een
+   eerdere extractie verkeerde tekst opsloeg. Vertaalde teksten en lange
+   feed-teksten blijven ongemoeid.
 
 Zo voldoet elke actieve bron aantoonbaar aan: werkende feed of scrape,
 intro's en afbeeldingen, correcte bronlinks, en actuele berichten.
