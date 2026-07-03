@@ -30,4 +30,9 @@ jobs:
             echo '```'
             jq -r 'if (.removedTitles | length) == 0 then "geen" else .removedTitles[] end' response.json
             echo '```'
+            echo ""
+            echo "### Fouten bij reviewbatches"
+            echo '```'
+            jq -r 'if ((.reviewErrorMessages // []) | length) == 0 then "geen" else .reviewErrorMessages[] end' response.json
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

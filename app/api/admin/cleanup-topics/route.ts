@@ -58,13 +58,17 @@ async function cleanupTopics() {
   const allTopics = (topics ?? []) as TopicForReview[];
   const irrelevantIds: string[] = [];
   let reviewErrors = 0;
+  const reviewErrorMessages = new Set<string>();
   for (const batch of chunk(allTopics, BATCH_SIZE)) {
     try {
       irrelevantIds.push(...(await findIrrelevantTopicIds(batch)));
     } catch (err) {
       // Eén mislukte Claude-call mag de hele opruimronde niet laten klappen;
       // de overgeslagen batch komt bij een volgende run vanzelf weer langs.
+      // De (gededupliceerde) foutmeldingen gaan mee in de response, zodat een
+      // structureel probleem zichtbaar is zonder Vercel-logs.
       reviewErrors++;
+      if (reviewErrorMessages.size < 3) reviewErrorMessages.add((err as Error).message);
       console.error("Topic-reviewbatch mislukt, ga door met de rest:", err);
     }
   }
@@ -75,6 +79,7 @@ async function cleanupTopics() {
       removed: 0,
       removedTitles: [],
       reviewErrors,
+      reviewErrorMessages: [...reviewErrorMessages],
     });
   }
 
@@ -120,5 +125,6 @@ async function cleanupTopics() {
     removed: removedTitles.length,
     removedTitles,
     reviewErrors,
+    reviewErrorMessages: [...reviewErrorMessages],
   });
 }

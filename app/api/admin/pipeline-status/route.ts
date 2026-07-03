@@ -43,10 +43,17 @@ export async function GET(request: Request) {
     }))
   );
 
-  const [queuedDueNow, doneCount, errorSamples, oldestQueued, rawItemCounts, topics, sources] =
+  const [queuedDueNow, doneCount, translationCount, errorSamples, oldestQueued, rawItemCounts, topics, sources] =
     await Promise.all([
       countJobs({ status: "queued", dueBefore: now }),
       countJobs({ status: "done" }),
+      // Sanity-check op het goedkope vertaalmodel: blijft dit 0 terwijl er
+      // niet-NL items verwerkt zijn, dan falen de Haiku-calls stilletjes
+      // (translateRawItem valt bewust terug op de originele tekst).
+      supabase
+        .from("translations")
+        .select("id", { count: "exact", head: true })
+        .then(({ count }) => count ?? 0),
       supabase
         .from("jobs")
         .select("type, payload, attempts, run_after, created_at")
@@ -97,6 +104,7 @@ export async function GET(request: Request) {
       recentErrors: errorSamples.data ?? [],
     },
     rawItems: Object.fromEntries(rawItemCounts),
+    translations: translationCount,
     topics: {
       total: topics.count ?? 0,
       latest: topics.data ?? [],
