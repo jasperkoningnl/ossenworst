@@ -19,6 +19,8 @@ export interface MergeInput {
 export type Contribution = "nieuw" | "bevestigt" | "nuanceert" | "detail";
 
 export interface MergeResult {
+  /** false = geen duidelijke Ajax-connectie; item wordt geskipt i.p.v. getopicaliseerd. */
+  isRelevant: boolean;
   matchedTopicId: string | null;
   category: TopicCategory;
   snippet: string;
@@ -35,6 +37,13 @@ const MERGE_TOOL = {
   input_schema: {
     type: "object" as const,
     properties: {
+      is_relevant: {
+        type: "boolean",
+        description:
+          "false als het artikel geen duidelijke connectie met AFC Ajax heeft: algemeen voetbal-/competitienieuws " +
+          "zonder Ajax-link, gokpromoties en wedtips, of nieuws dat niets met voetbal te maken heeft. " +
+          "Bij false mogen de overige velden nominale waarden bevatten.",
+      },
       matched_topic_id: {
         type: ["string", "null"],
         description: "id van het gematchte bestaande topic, of null als er geen duidelijke match is.",
@@ -59,7 +68,7 @@ const MERGE_TOOL = {
           "1-2 zinnen NL in de stijl 'Volgens De Telegraaf...'. Alleen invullen als matched_topic_id null is.",
       },
     },
-    required: ["matched_topic_id", "category", "snippet", "contribution"],
+    required: ["is_relevant", "matched_topic_id", "category", "snippet", "contribution"],
   },
 };
 
@@ -75,9 +84,13 @@ export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> 
     max_tokens: 1024,
     system:
       "Je bent de merge-motor van Ossenworst Manager, een Ajax-nieuwsaggregator. Je krijgt een nieuw " +
-      "artikel en een lijst van bestaande topics (lopende verhalen van de afgelopen 14 dagen). Bepaal of " +
-      "het artikel hetzelfde verhaal is als een bestaand topic (zelfde transfer/gebeurtenis/persoon) of een " +
-      "nieuw topic moet starten. Wees conservatief: match alleen bij duidelijke inhoudelijke overlap.",
+      "artikel en een lijst van bestaande topics (lopende verhalen van de afgelopen 14 dagen). Beoordeel " +
+      "EERST of het artikel een duidelijke connectie met AFC Ajax heeft (club, spelers, staf, transfers, " +
+      "wedstrijden of jeugd van Ajax). Geen Ajax-connectie — zoals algemeen voetbalnieuws over andere clubs " +
+      "of toernooien, gokpromoties/wedtips of nieuws buiten het voetbal — betekent is_relevant=false. " +
+      "Is het wel relevant, bepaal dan of het artikel hetzelfde verhaal is als een bestaand topic (zelfde " +
+      "transfer/gebeurtenis/persoon) of een nieuw topic moet starten. Wees conservatief: match alleen bij " +
+      "duidelijke inhoudelijke overlap.",
     tools: [MERGE_TOOL],
     tool_choice: { type: "tool", name: "classify_and_merge" },
     messages: [
@@ -97,6 +110,7 @@ export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> 
   }
 
   const result = toolUse.input as {
+    is_relevant: boolean;
     matched_topic_id: string | null;
     category: TopicCategory;
     snippet: string;
@@ -106,6 +120,7 @@ export async function mergeAndClassify(input: MergeInput): Promise<MergeResult> 
   };
 
   return {
+    isRelevant: result.is_relevant !== false,
     matchedTopicId: result.matched_topic_id,
     category: result.category,
     snippet: result.snippet,
