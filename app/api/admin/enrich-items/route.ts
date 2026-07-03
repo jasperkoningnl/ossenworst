@@ -52,7 +52,7 @@ async function enrichItems() {
     .from("raw_items")
     .select("id, url, body, language, publisher_name, image_url, enriched_at, sources(slug)")
     .not("topic_id", "is", null)
-    .or("enriched_at.is.null,url.ilike.%news.google.com%")
+    .or("enriched_at.is.null,url.ilike.%news.google.com%,image_url.is.null")
     .order("fetched_at", { ascending: false })
     .limit(MAX_ITEMS);
   if (error) {
@@ -82,8 +82,9 @@ async function enrichItems() {
           publisher_name:
             item.publisher_name ?? (source?.slug ? PUBLISHER_BY_SLUG[source.slug] ?? null : null),
           image_url: item.image_url,
-          // Herleiding opnieuw proberen voor items die nog op Google News wijzen.
-          enriched_at: wasGoogle ? null : item.enriched_at,
+          // Opnieuw verrijken als de URL nog op Google News wijst óf de
+          // afbeelding ontbreekt (bv. items van vóór de image-ondersteuning).
+          enriched_at: wasGoogle || !item.image_url ? null : item.enriched_at,
         },
         // Niet-NL items zijn al vertaald: hun body niet overschrijven met een
         // vers gescrapete (buitenlandse) intro.

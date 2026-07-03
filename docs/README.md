@@ -79,8 +79,9 @@ is op BEVESTIGD — handig na filterwijzigingen.
 
 **Bestaande items verrijken:** workflow **"Enrich items"** herleidt Google
 News-URL's van al-verwerkte items alsnog naar de originele publisher-URL,
-vult publishernamen aan en haalt ontbrekende artikel-intro's op. Per run
-wordt een batch verwerkt; draai opnieuw zolang `remaining` > 0.
+vult publishernamen aan en haalt ontbrekende artikel-intro's en
+-afbeeldingen (og:image) op. Per run wordt een batch verwerkt; draai
+opnieuw zolang `remaining` > 0.
 
 ### Gecontroleerde opbouw van de bronnenlijst
 
