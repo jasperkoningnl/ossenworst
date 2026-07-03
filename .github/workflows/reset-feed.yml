@@ -1,0 +1,38 @@
+name: Reset feed
+
+# Handmatig te starten: gooit de nieuwsfeed volledig leeg (topics, items,
+# jobs) voor een gecontroleerde heropbouw. Bronnen en FM-data blijven staan.
+# Vereist het intypen van LEEG als bevestiging.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Typ LEEG om te bevestigen dat de hele feed gewist wordt"
+        required: true
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wis de feed
+        run: |
+          if [ "${{ inputs.confirm }}" != "LEEG" ]; then
+            echo "::error::Bevestiging ontbreekt — typ LEEG bij het starten van de workflow"
+            exit 1
+          fi
+          HTTP_CODE=$(curl -s --max-time 120 -o response.json -w '%{http_code}' \
+            -X POST "${{ vars.APP_URL }}/api/admin/reset-feed?confirm=LEEG" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+          echo "HTTP $HTTP_CODE"
+          jq . response.json 2>/dev/null || cat response.json
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::reset-feed gaf HTTP $HTTP_CODE — zie de response hierboven"
+            exit 1
+          fi
+          {
+            echo "## Reset feed"
+            echo ""
+            echo "Verwijderd: $(jq -r '.deleted.topics' response.json) topics, $(jq -r '.deleted.rawItems' response.json) items, $(jq -r '.deleted.jobs' response.json) jobs."
+            echo ""
+            echo "De eerstvolgende pipeline-tick haalt alle actieve bronnen vers op."
+          } >> "$GITHUB_STEP_SUMMARY"

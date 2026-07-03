@@ -11,7 +11,11 @@ interface CustomItem {
   contentEncoded?: string;
   /** RSS <source>-element; Google News zet hier de echte publisher in. */
   gnewsSource?: { _?: string; $?: { url?: string } } | string;
+  mediaContent?: { $?: { url?: string; medium?: string; type?: string } }[];
+  mediaThumbnail?: { $?: { url?: string } }[];
 }
+
+type FeedItem = Parser.Item & CustomItem;
 
 const parser = new Parser<Record<string, unknown>, CustomItem>({
   headers: {
@@ -23,11 +27,25 @@ const parser = new Parser<Record<string, unknown>, CustomItem>({
     item: [
       ["content:encoded", "contentEncoded"],
       ["source", "gnewsSource"],
+      ["media:content", "mediaContent", { keepArray: true }],
+      ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
     ],
   },
 });
 
 const MAX_BODY_CHARS = 1200;
+
+/** Eén genormaliseerd feed-item, klaar voor raw_items (of voor de broncheck). */
+export interface ParsedFeedItem {
+  external_id: string;
+  url: string;
+  title: string;
+  body: string | null;
+  published_at: string | null;
+  language: string;
+  publisher_name: string | null;
+  image_url: string | null;
+}
 
 /**
  * Stabiele dedup-sleutel. Items zonder guid, link én titel worden overgeslagen:
@@ -55,7 +73,7 @@ function cleanTitle(title: string, isGnews: boolean): string {
 }
 
 /** Echte publishernaam uit het RSS <source>-element of het titel-achtervoegsel. */
-function publisherNameFor(item: Parser.Item & CustomItem): string | null {
+function publisherNameFor(item: FeedItem): string | null {
   const source = item.gnewsSource;
   if (typeof source === "string" && source.trim()) return source.trim();
   if (source && typeof source === "object" && source._?.trim()) return source._.trim();
@@ -68,7 +86,7 @@ function publisherNameFor(item: Parser.Item & CustomItem): string | null {
  * waardeloos als intro; die krijgen null (de verrijkingsstap haalt de intro
  * later van de artikelpagina zelf).
  */
-function bodyFor(item: Parser.Item & CustomItem, isGnews: boolean): string | null {
+function bodyFor(item: FeedItem, isGnews: boolean): string | null {
   if (isGnews) return null;
   const raw = item.contentEncoded || item.content || item.contentSnippet || "";
   const text = htmlToText(raw);
@@ -76,33 +94,42 @@ function bodyFor(item: Parser.Item & CustomItem, isGnews: boolean): string | nul
 }
 
 /**
- * Haalt een RSS-bron op en upsert nieuwe items in `raw_items` (dedup op
- * source_id+external_id via de DB-constraint). Verouderde items (ouder dan
- * MAX_ITEM_AGE_DAYS) worden genegeerd zodat archiefstukken en jubileum-feeds
- * de actuele feed niet vervuilen. Enqueued een `process_item`-job per
- * daadwerkelijk nieuw item.
+ * Afbeelding uit het feed-item, met de fallback-keten media:content →
+ * media:thumbnail → enclosure → eerste <img> in de (encoded) content.
  */
-export async function fetchRssSource(supabase: SupabaseClient, source: Source) {
-  if (!source.feed_url) {
-    await supabase.from("sources").update({ last_status: "geen feed_url ingesteld" }).eq("id", source.id);
-    return { inserted: 0 };
+function imageUrlFor(item: FeedItem): string | null {
+  for (const media of item.mediaContent ?? []) {
+    const url = media.$?.url;
+    const isImage =
+      media.$?.medium === "image" || (media.$?.type ?? "").startsWith("image/") || /\.(jpe?g|png|webp|gif)($|\?)/i.test(url ?? "");
+    if (url && isImage) return url;
+  }
+  const thumbnail = item.mediaThumbnail?.[0]?.$?.url;
+  if (thumbnail) return thumbnail;
+
+  const enclosure = item.enclosure;
+  if (enclosure?.url && ((enclosure.type ?? "").startsWith("image/") || /\.(jpe?g|png|webp|gif)($|\?)/i.test(enclosure.url))) {
+    return enclosure.url;
   }
 
-  let feed;
-  try {
-    feed = await parser.parseURL(source.feed_url);
-  } catch (err) {
-    await supabase
-      .from("sources")
-      .update({ last_fetched_at: new Date().toISOString(), last_status: `fout: ${(err as Error).message}` })
-      .eq("id", source.id);
-    throw err;
-  }
+  const html = item.contentEncoded || item.content || "";
+  return html.match(/<img[^>]+src="(https?:\/\/[^"]+)"/i)?.[1] ?? null;
+}
 
+/**
+ * Haalt en normaliseert de items van een RSS-bron zónder iets op te slaan.
+ * Verouderde items (ouder dan MAX_ITEM_AGE_DAYS) worden genegeerd zodat
+ * archiefstukken en jubileum-feeds de actuele feed niet vervuilen.
+ * Gedeeld door de echte fetch en de broncheck (dry-run).
+ */
+export async function parseRssSource(source: Source): Promise<ParsedFeedItem[]> {
+  if (!source.feed_url) throw new Error("geen feed_url ingesteld");
+
+  const feed = await parser.parseURL(source.feed_url);
   const isGnews = isGoogleNewsSource(source);
   const ageCutoff = Date.now() - MAX_ITEM_AGE_DAYS * 24 * 60 * 60 * 1000;
 
-  const rows = feed.items.flatMap((item) => {
+  return feed.items.flatMap((item) => {
     const externalId = externalIdFor(item);
     if (!externalId) return [];
     if (item.isoDate && new Date(item.isoDate).getTime() < ageCutoff) return [];
@@ -115,7 +142,6 @@ export async function fetchRssSource(supabase: SupabaseClient, source: Source) {
     }
 
     return [{
-      source_id: source.id,
       external_id: externalId,
       url,
       title: cleanTitle(item.title ?? "(geen titel)", isGnews),
@@ -123,8 +149,29 @@ export async function fetchRssSource(supabase: SupabaseClient, source: Source) {
       published_at: item.isoDate ?? null,
       language: source.language,
       publisher_name: isGnews ? publisherNameFor(item) : null,
+      image_url: imageUrlFor(item),
     }];
   });
+}
+
+/**
+ * Haalt een RSS-bron op en upsert nieuwe items in `raw_items` (dedup op
+ * source_id+external_id via de DB-constraint). Enqueued een `process_item`-
+ * job per daadwerkelijk nieuw item.
+ */
+export async function fetchRssSource(supabase: SupabaseClient, source: Source) {
+  let items: ParsedFeedItem[];
+  try {
+    items = await parseRssSource(source);
+  } catch (err) {
+    await supabase
+      .from("sources")
+      .update({ last_fetched_at: new Date().toISOString(), last_status: `fout: ${(err as Error).message}` })
+      .eq("id", source.id);
+    throw err;
+  }
+
+  const rows = items.map((item) => ({ source_id: source.id, ...item }));
 
   if (rows.length === 0) {
     await supabase

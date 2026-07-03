@@ -19,6 +19,7 @@ const BOILERPLATE_RE =
 export interface ArticleIntro {
   intro: string | null;
   siteName: string | null;
+  imageUrl: string | null;
 }
 
 function collectParagraphs($: cheerio.CheerioAPI, selector: string): string {
@@ -41,12 +42,16 @@ export async function fetchArticleIntro(url: string): Promise<ArticleIntro> {
     redirect: "follow",
   });
   if (!res.ok || !(res.headers.get("content-type") ?? "").includes("html")) {
-    return { intro: null, siteName: null };
+    return { intro: null, siteName: null, imageUrl: null };
   }
 
   const $ = cheerio.load(await res.text());
 
   const siteName = $('meta[property="og:site_name"]').attr("content")?.trim() || null;
+  const imageUrl =
+    $('meta[property="og:image"]').attr("content")?.trim() ||
+    $('meta[name="twitter:image"]').attr("content")?.trim() ||
+    null;
   const metaDescription =
     $('meta[property="og:description"]').attr("content")?.trim() ||
     $('meta[name="description"]').attr("content")?.trim() ||
@@ -63,5 +68,5 @@ export async function fetchArticleIntro(url: string): Promise<ArticleIntro> {
       ? paragraphs.slice(0, MAX_INTRO_CHARS)
       : metaDescription;
 
-  return { intro: intro || null, siteName };
+  return { intro: intro || null, siteName, imageUrl };
 }
