@@ -1,4 +1,4 @@
-import { getClaudeClient, CLAUDE_MODEL_CHEAP } from "./client";
+import { getClaudeClient, CLAUDE_MODEL } from "./client";
 
 export interface TopicForReview {
   id: string;
@@ -36,8 +36,11 @@ export async function findIrrelevantTopicIds(topics: TopicForReview[]): Promise<
     .map((t) => `- id=${t.id} | ${t.title}${t.summary ? ` | ${t.summary}` : ""}`)
     .join("\n");
 
+  // Bewust het merge-model en niet het goedkope model: de Haiku-calls bleken
+  // in deze omgeving stelselmatig te falen (zie reviewErrorMessages in de
+  // cleanup-response), terwijl dit model aantoonbaar werkt in de pipeline.
   const message = await client.messages.create({
-    model: CLAUDE_MODEL_CHEAP,
+    model: CLAUDE_MODEL,
     max_tokens: 2048,
     system:
       "Je controleert de topiclijst van Ossenworst Manager, een nieuwsaggregator die uitsluitend over " +
