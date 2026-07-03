@@ -12,16 +12,22 @@ jobs:
     steps:
       - name: Ruim niet-Ajax-topics op
         run: |
-          RESPONSE=$(curl -sf --max-time 300 -X POST "${{ vars.APP_URL }}/api/admin/cleanup-topics" \
+          HTTP_CODE=$(curl -s --max-time 300 -o response.json -w '%{http_code}' \
+            -X POST "${{ vars.APP_URL }}/api/admin/cleanup-topics" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
-          echo "$RESPONSE" | jq .
+          echo "HTTP $HTTP_CODE"
+          jq . response.json 2>/dev/null || cat response.json
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::cleanup-topics gaf HTTP $HTTP_CODE — zie de response hierboven"
+            exit 1
+          fi
           {
             echo "## Cleanup topics"
             echo ""
-            echo "Gecontroleerd: $(echo "$RESPONSE" | jq -r '.checked') — verwijderd: $(echo "$RESPONSE" | jq -r '.removed')"
+            echo "Gecontroleerd: $(jq -r '.checked' response.json) — verwijderd: $(jq -r '.removed' response.json) — mislukte reviewbatches: $(jq -r '.reviewErrors // 0' response.json)"
             echo ""
             echo "### Verwijderde topics"
             echo '```'
-            echo "$RESPONSE" | jq -r 'if (.removedTitles | length) == 0 then "geen" else .removedTitles[] end'
+            jq -r 'if (.removedTitles | length) == 0 then "geen" else .removedTitles[] end' response.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
