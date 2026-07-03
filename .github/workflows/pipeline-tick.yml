@@ -17,10 +17,15 @@ jobs:
         run: |
           MAX_ITERATIONS=15
           for i in $(seq 1 $MAX_ITERATIONS); do
-            RESPONSE=$(curl -sf --max-time 120 -X POST "${{ vars.APP_URL }}/api/cron/tick" \
+            HTTP_CODE=$(curl -s --max-time 120 -o response.json -w '%{http_code}' \
+              -X POST "${{ vars.APP_URL }}/api/cron/tick" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
-            echo "tick $i: $RESPONSE"
-            REMAINING=$(echo "$RESPONSE" | jq -r '.remaining // 0')
+            echo "tick $i (HTTP $HTTP_CODE): $(cat response.json)"
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "::error::tick gaf HTTP $HTTP_CODE — zie de response hierboven"
+              exit 1
+            fi
+            REMAINING=$(jq -r '.remaining // 0' response.json)
             if [ "$REMAINING" -eq 0 ]; then
               echo "Queue leeg na $i tick(s)."
               break
