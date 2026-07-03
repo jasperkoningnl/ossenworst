@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CategoryTag } from "@/components/topic/CategoryTag";
 import { ConfidenceBadge } from "@/components/topic/ConfidenceBadge";
-import { ConfidenceMeter } from "@/components/topic/ConfidenceMeter";
-import { AISummaryCard } from "@/components/topic/AISummaryCard";
+import { SourceIntroCard } from "@/components/topic/SourceIntroCard";
 import { Timeline } from "@/components/topic/Timeline";
 import { SourcesList } from "@/components/topic/SourcesList";
 import { CommentList } from "@/components/topic/CommentList";
@@ -59,9 +58,7 @@ export default async function TopicDetailPage({
           Bijgewerkt {formatDate(item.last_activity_at)} · loopt sinds {formatDate(detail.sagaStartedAt)}
         </div>
 
-        <ConfidenceMeter confidence={item.confidence} />
-
-        {item.summary && <AISummaryCard summary={item.summary} sourceCount={item.sourceCount} />}
+        {detail.intro && <SourceIntroCard intro={detail.intro} />}
         <Timeline entries={detail.timeline} />
         <SourcesList sources={detail.sources} />
         <CommentList comments={detail.comments} topicId={item.id} />

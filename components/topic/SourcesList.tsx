@@ -1,6 +1,11 @@
-import { sourceTierColors } from "@/lib/theme/colors";
+import { tierDotColor } from "@/lib/theme/colors";
 import type { TopicSourceEntry } from "@/lib/types/feed";
 
+/**
+ * Bronnenlijst met per bron een link naar het originele artikel en een
+ * betrouwbaarheidsstip (groen/geel/grijs). Tiers zijn backend-informatie en
+ * worden niet als label getoond.
+ */
 export function SourcesList({ sources }: { sources: TopicSourceEntry[] }) {
   return (
     <div>
@@ -12,25 +17,35 @@ export function SourcesList({ sources }: { sources: TopicSourceEntry[] }) {
       </h3>
       <div className="mb-6 flex flex-col gap-1.5">
         {sources.map((source, i) => {
-          const { bg, fg } = sourceTierColors(source.tier);
-          return (
-            <div
-              key={i}
-              className="flex items-center gap-2.5 rounded-md border px-3 py-2.5"
-              style={{ background: "var(--card)", borderColor: "var(--bd)" }}
-            >
+          const row = (
+            <>
               <span
-                className="rounded-sm px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide"
-                style={{ background: bg, color: fg }}
-              >
-                Tier {source.tier}
-              </span>
-              <span className="text-[14px] font-semibold" style={{ color: "var(--fg-strong)" }}>
+                className="h-[9px] w-[9px] flex-none rounded-full"
+                style={{ background: tierDotColor(source.tier) }}
+              />
+              <span className="min-w-0 truncate text-[14px] font-semibold" style={{ color: "var(--fg-strong)" }}>
                 {source.name}
               </span>
-              <span className="ml-auto text-[11.5px]" style={{ color: "var(--fg3)" }}>
+              <span className="ml-auto whitespace-nowrap text-[11.5px]" style={{ color: "var(--fg3)" }}>
                 {source.date}
               </span>
+              {source.url && (
+                <span className="text-[13px] font-bold" style={{ color: "var(--ajax-red)" }}>
+                  ›
+                </span>
+              )}
+            </>
+          );
+          const className = "flex items-center gap-2.5 rounded-md border px-3 py-2.5";
+          const style = { background: "var(--card)", borderColor: "var(--bd)" };
+
+          return source.url ? (
+            <a key={i} href={source.url} target="_blank" rel="noopener noreferrer" className={className} style={style}>
+              {row}
+            </a>
+          ) : (
+            <div key={i} className={className} style={style}>
+              {row}
             </div>
           );
         })}

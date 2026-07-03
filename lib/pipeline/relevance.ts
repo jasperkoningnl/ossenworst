@@ -7,6 +7,20 @@ import { playerSeeds } from "@/lib/players/squad.seed";
  * NIET bij: die matchen losjes en leveren ook artikelen zonder Ajax-connectie
  * (gokpromoties, regionaal nieuws), dus die gaan gewoon door het filter.
  */
+/**
+ * Actualiteitsgrens: items met een publicatiedatum ouder dan dit aantal dagen
+ * zijn archiefmateriaal (jubileumstukken, terugblikken, her-geïndexeerde oude
+ * artikelen) en horen niet in een actuele nieuwsfeed. Items zónder datum
+ * passeren — die kunnen we niet beoordelen en zijn in de praktijk vers.
+ */
+export const MAX_ITEM_AGE_DAYS = 14;
+
+export function isTooOld(publishedAt: string | null): boolean {
+  if (!publishedAt) return false;
+  const cutoff = Date.now() - MAX_ITEM_AGE_DAYS * 24 * 60 * 60 * 1000;
+  return new Date(publishedAt).getTime() < cutoff;
+}
+
 export const AJAX_SOURCE_SLUGS = new Set([
   "ajax-nl",
   "ajax-supporters",
@@ -65,7 +79,7 @@ export function isRelevant(title: string, body: string | null): boolean {
 export async function processRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error } = await supabase
     .from("raw_items")
-    .select("title, body, language, sources(slug)")
+    .select("title, body, language, published_at, sources(slug)")
     .eq("id", rawItemId)
     .single();
   if (error) throw error;
@@ -73,7 +87,7 @@ export async function processRawItem(supabase: SupabaseClient, rawItemId: string
   const source = rawItem.sources as unknown as { slug: string } | null;
   const isAjaxSource = source?.slug ? AJAX_SOURCE_SLUGS.has(source.slug) : false;
 
-  if (!isAjaxSource && !isRelevant(rawItem.title, rawItem.body)) {
+  if (isTooOld(rawItem.published_at) || (!isAjaxSource && !isRelevant(rawItem.title, rawItem.body))) {
     await supabase.from("raw_items").update({ processing_status: "skipped" }).eq("id", rawItemId);
     return { relevant: false };
   }

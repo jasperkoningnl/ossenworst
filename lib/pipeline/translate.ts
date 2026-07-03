@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { translateToNl, TRANSLATE_MODEL } from "@/lib/claude/translate";
 import { isRelevant, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
+import { enrichRawItem } from "@/lib/pipeline/enrich";
 
 /**
  * Vertaalt een niet-NL raw_item naar het Nederlands, slaat het resultaat op in
@@ -10,7 +11,7 @@ import { isRelevant, AJAX_SOURCE_SLUGS } from "@/lib/pipeline/relevance";
 export async function translateRawItem(supabase: SupabaseClient, rawItemId: string) {
   const { data: rawItem, error } = await supabase
     .from("raw_items")
-    .select("title, body, language, sources(slug)")
+    .select("id, title, body, url, language, publisher_name, enriched_at, sources(slug)")
     .eq("id", rawItemId)
     .single();
   if (error) throw error;
@@ -23,6 +24,10 @@ export async function translateRawItem(supabase: SupabaseClient, rawItemId: stri
     await supabase.from("raw_items").update({ processing_status: "skipped" }).eq("id", rawItemId);
     return { skipped: true };
   }
+
+  // Vóór de vertaling verrijken (originele URL + artikel-intro), zodat de
+  // vertaling meteen over de volledige intro gaat i.p.v. een kale kop.
+  const enriched = await enrichRawItem(supabase, rawItem);
 
   const { data: existing } = await supabase
     .from("translations")
@@ -45,7 +50,7 @@ export async function translateRawItem(supabase: SupabaseClient, rawItemId: stri
 
   let translated = false;
   try {
-    const result = await translateToNl(rawItem.title, rawItem.body, rawItem.language);
+    const result = await translateToNl(rawItem.title, enriched.body, rawItem.language);
 
     await supabase.from("translations").insert({
       raw_item_id: rawItemId,

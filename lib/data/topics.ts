@@ -1,14 +1,83 @@
 import { createClient } from "@/lib/supabase/server";
 import { truncate } from "@/lib/utils/text";
 import type { Topic } from "@/lib/types/database";
-import type { TopicComment, TopicDetail, TopicFeedItem, TopicSourceEntry, TopicTimelineEntry } from "@/lib/types/feed";
+import type {
+  TopicComment,
+  TopicDetail,
+  TopicFeedItem,
+  TopicIntro,
+  TopicSourceEntry,
+  TopicTimelineEntry,
+} from "@/lib/types/feed";
 
-const TEASER_MAX_LENGTH = 160;
+const TEASER_MAX_LENGTH = 200;
+// Topics zonder activiteit in deze periode zijn geen nieuws meer en blijven
+// uit de feed — ook als oude items ooit met een historische publicatiedatum
+// zijn binnengekomen.
+const MAX_FEED_AGE_DAYS = 30;
 
-function toFeedItem(topic: Topic, commentCount: number): TopicFeedItem {
+/** Kop, intro, link en bronnaam van het meest recente item van een topic. */
+interface LatestItemInfo {
+  title: string | null;
+  body: string | null;
+  url: string | null;
+  sourceName: string | null;
+}
+
+interface TopicItemRow {
+  topic_id: string;
+  reported_at: string;
+  raw_items: unknown;
+  sources: unknown;
+}
+
+function latestInfoFromRow(row: TopicItemRow): LatestItemInfo {
+  // Zonder gegenereerde Database-types ziet supabase-js many-to-one FK-joins
+  // als array; runtime is het altijd één object.
+  const rawItem = row.raw_items as {
+    title: string;
+    body: string | null;
+    url: string;
+    publisher_name: string | null;
+  } | null;
+  const source = row.sources as { name: string } | null;
+  return {
+    title: rawItem?.title ?? null,
+    body: rawItem?.body ?? null,
+    url: rawItem?.url ?? null,
+    sourceName: rawItem?.publisher_name ?? source?.name ?? null,
+  };
+}
+
+/**
+ * Meest recente item per topic: de kop en intro van de laatst rapporterende
+ * bron zijn leidend in de feed en op de detailpagina.
+ */
+async function fetchLatestItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  topicIds: string[]
+): Promise<Map<string, LatestItemInfo>> {
+  const latest = new Map<string, LatestItemInfo>();
+  if (topicIds.length === 0) return latest;
+
+  const { data: rows } = await supabase
+    .from("topic_items")
+    .select("topic_id, reported_at, raw_items(title, body, url, publisher_name), sources(name)")
+    .in("topic_id", topicIds)
+    .order("reported_at", { ascending: false });
+
+  for (const row of (rows ?? []) as TopicItemRow[]) {
+    if (!latest.has(row.topic_id)) latest.set(row.topic_id, latestInfoFromRow(row));
+  }
+  return latest;
+}
+
+function toFeedItem(topic: Topic, latest: LatestItemInfo | undefined, commentCount: number): TopicFeedItem {
   return {
     ...topic,
-    teaser: truncate(topic.summary ?? "", TEASER_MAX_LENGTH),
+    title: latest?.title ?? topic.title,
+    // Alinea-witruimte plat slaan: de teaser is één doorlopende feed-regel.
+    teaser: truncate((latest?.body ?? topic.summary ?? "").replace(/\s+/g, " "), TEASER_MAX_LENGTH),
     sourceCount: topic.item_count,
     commentCount,
   };
@@ -36,20 +105,23 @@ async function countVisibleComments(
 export async function getPublishedTopics(): Promise<TopicFeedItem[]> {
   const supabase = await createClient();
 
+  const feedCutoff = new Date(Date.now() - MAX_FEED_AGE_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data: topics, error } = await supabase
     .from("topics")
     .select("*")
     .eq("is_published", true)
+    .gte("last_activity_at", feedCutoff)
     .order("last_activity_at", { ascending: false });
   if (error) throw error;
   if (!topics || topics.length === 0) return [];
 
-  const commentCounts = await countVisibleComments(
-    supabase,
-    topics.map((t) => t.id)
-  );
+  const topicIds = topics.map((t) => t.id);
+  const [commentCounts, latestItems] = await Promise.all([
+    countVisibleComments(supabase, topicIds),
+    fetchLatestItems(supabase, topicIds),
+  ]);
 
-  return topics.map((t) => toFeedItem(t, commentCounts.get(t.id) ?? 0));
+  return topics.map((t) => toFeedItem(t, latestItems.get(t.id), commentCounts.get(t.id) ?? 0));
 }
 
 function formatShortDate(iso: string): string {
@@ -87,7 +159,9 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   const [{ data: itemRows }, { data: commentRows }] = await Promise.all([
     supabase
       .from("topic_items")
-      .select("snippet, reported_at, contribution, confidence_at, sources(name, tier)")
+      .select(
+        "snippet, reported_at, contribution, confidence_at, sources(name, tier), raw_items(title, body, url, publisher_name)"
+      )
       .eq("topic_id", topic.id)
       .order("reported_at", { ascending: true }),
     supabase
@@ -103,20 +177,48 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   const items = (itemRows ?? []).map((row) => ({
     ...row,
     source: row.sources as unknown as { name: string; tier: number } | null,
+    rawItem: row.raw_items as unknown as {
+      title: string;
+      body: string | null;
+      url: string;
+      publisher_name: string | null;
+    } | null,
   }));
+
+  const displayName = (item: (typeof items)[number]) =>
+    item.rawItem?.publisher_name ?? item.source?.name ?? "onbekende bron";
 
   const timeline: TopicTimelineEntry[] = items.map((row) => ({
     date: formatShortDate(row.reported_at),
-    headline: contributionHeadline(row.contribution, row.source?.name ?? "onbekende bron"),
+    headline: contributionHeadline(row.contribution, displayName(row)),
     snippet: row.snippet ?? "",
     confidence: row.confidence_at,
   }));
 
   const sources: TopicSourceEntry[] = items.map((row) => ({
-    name: row.source?.name ?? "onbekende bron",
+    name: displayName(row),
     date: formatShortDate(row.reported_at),
     tier: (row.source?.tier ?? 2) as TopicSourceEntry["tier"],
+    url: row.rawItem?.url ?? null,
   }));
+
+  // Kop en intro komen van de meest recente bron; de items staan oplopend
+  // gesorteerd, dus dat is de laatste rij.
+  const latestRow = items[items.length - 1];
+  const latest: LatestItemInfo | undefined = latestRow
+    ? {
+        title: latestRow.rawItem?.title ?? null,
+        body: latestRow.rawItem?.body ?? null,
+        url: latestRow.rawItem?.url ?? null,
+        sourceName: latestRow ? displayName(latestRow) : null,
+      }
+    : undefined;
+
+  const introText = latest?.body ?? latestRow?.snippet ?? topic.summary;
+  const intro: TopicIntro | null =
+    latest && introText
+      ? { text: introText, sourceName: latest.sourceName ?? "onbekende bron", url: latest.url }
+      : null;
 
   const comments: TopicComment[] = (commentRows ?? []).map((row) => {
     const profile = row.profiles as unknown as { username: string | null } | null;
@@ -128,9 +230,10 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
     };
   });
 
-  const item = toFeedItem(topic, comments.length);
+  const item = toFeedItem(topic, latest, comments.length);
 
   const detail: TopicDetail = {
+    intro,
     timeline,
     sources,
     comments,

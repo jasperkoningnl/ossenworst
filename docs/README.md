@@ -72,7 +72,48 @@ jobs, falende bronnen en de nieuwste topics (via `GET
 
 **Topics opschonen:** workflow **"Cleanup topics"** laat Claude alle bestaande
 topics beoordelen en verwijdert de topics zonder Ajax-connectie (wedtips,
-algemeen voetbalnieuws, niet-voetbal) — handig na filterwijzigingen.
+algemeen voetbalnieuws, niet-voetbal) én niet-actueel materiaal (terugblikken,
+jubileumstukken, wedstrijden van jaren geleden) — handig na filterwijzigingen.
+
+### Actualiteit
+
+De feed toont alleen actueel nieuws:
+
+- Items met een publicatiedatum ouder dan 14 dagen worden bij ingest en in de
+  pipeline overgeslagen (`MAX_ITEM_AGE_DAYS` in `lib/pipeline/relevance.ts`).
+- Alle Google News-queries bevatten `when:7d`, zodat Google geen jaren oude
+  archiefstukken meer serveert.
+- De merge- en cleanup-prompts keuren terugblikken/jubileumartikelen af, ook
+  als ze recent gepubliceerd zijn.
+- De feed zelf toont alleen topics met activiteit in de laatste 30 dagen
+  (`MAX_FEED_AGE_DAYS` in `lib/data/topics.ts`).
+
+### Originele bronnen & intro's
+
+Relevante items worden vlak vóór de vertaal-/merge-stap eenmalig verrijkt
+(`lib/pipeline/enrich.ts`):
+
+- **Google News-links** worden herleid naar de originele publisher-URL
+  (offline base64-decodering, met een netwerk-fallback via Googles
+  batchexecute-endpoint in `lib/pipeline/google-news.ts`). De echte
+  publishernaam (uit het RSS `<source>`-element) komt in
+  `raw_items.publisher_name` en wordt in de UI getoond i.p.v.
+  "Google News: …".
+- **Artikel-intro's**: geeft de feed weinig of geen tekst mee, dan haalt
+  `lib/pipeline/article-intro.ts` de openingsalinea's (lead) van de
+  artikelpagina op — bij paywalled sites zijn kop + lead vrijwel altijd
+  publiek. We tonen alleen de intro en linken door voor de rest.
+
+De frontend toont per topic de **kop en intro van de meest recente bron**
+(geen AI-samenvatting meer) met een "Lees het volledige artikel bij …"-link,
+en elke bron in de bronnenlijst linkt naar het originele artikel.
+Bron-tiers zijn backend-informatie: de UI toont alleen een
+betrouwbaarheidsstip (groen/geel/grijs) en het label "Onbevestigd" i.p.v.
+"Praatprogramma". Hiervoor is de migratie
+`supabase/migrations/20260703010000_raw_items_enrichment.sql` nodig; draai
+daarna de **"Seed sources"**-workflow opnieuw (voor de `when:7d`-queries) en
+eenmalig **"Cleanup topics"** om bestaand verouderd/irrelevant materiaal uit
+de feed te halen.
 
 **Eenmalige setup** (naast wat je al deed voor bronnen seeden):
 1. Zet `CRON_SECRET` in Vercel op een willekeurige, geheime waarde (staat al in
