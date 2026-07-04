@@ -4,7 +4,6 @@ import { CategoryTag } from "@/components/topic/CategoryTag";
 import { ConfidenceBadge } from "@/components/topic/ConfidenceBadge";
 import { SourceIntroCard } from "@/components/topic/SourceIntroCard";
 import { Timeline } from "@/components/topic/Timeline";
-import { SourcesList } from "@/components/topic/SourcesList";
 import { CommentList } from "@/components/topic/CommentList";
 import { getTopicDetailBySlug } from "@/lib/data/topics";
 
@@ -60,7 +59,6 @@ export default async function TopicDetailPage({
 
         {detail.intro && <SourceIntroCard intro={detail.intro} />}
         <Timeline entries={detail.timeline} />
-        <SourcesList sources={detail.sources} />
         <CommentList comments={detail.comments} topicId={item.id} />
       </div>
     </div>

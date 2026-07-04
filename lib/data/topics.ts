@@ -7,7 +7,6 @@ import type {
   TopicDetail,
   TopicFeedItem,
   TopicIntro,
-  TopicSourceEntry,
   TopicTimelineEntry,
 } from "@/lib/types/feed";
 
@@ -152,6 +151,24 @@ export async function getPublishedTopics(): Promise<TopicFeedItem[]> {
   return topics.map((t) => toFeedItem(t, latestItems.get(t.id), commentCounts.get(t.id) ?? 0));
 }
 
+/** Tijdstip van de laatst bijgewerkte gepubliceerde topic, voor de header. */
+export async function getLatestUpdateAt(): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("topics")
+    .select("last_activity_at")
+    .eq("is_published", true)
+    .order("last_activity_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("Laatste update-tijd ophalen mislukt:", error.message);
+    return null;
+  }
+  return data?.last_activity_at ?? null;
+}
+
 function formatShortDate(iso: string): string {
   const d = new Date(iso);
   const day = d.getUTCDate();
@@ -188,7 +205,7 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
     supabase
       .from("topic_items")
       .select(
-        "snippet, reported_at, contribution, confidence_at, sources(name, tier), raw_items(title, body, url, publisher_name, image_url)"
+        "snippet, reported_at, contribution, confidence_at, sources(name), raw_items(title, body, url, publisher_name, image_url)"
       )
       .eq("topic_id", topic.id)
       .order("reported_at", { ascending: true }),
@@ -207,7 +224,7 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   // als array; runtime is het altijd één object.
   const items = (itemRows ?? []).map((row) => ({
     ...row,
-    source: row.sources as unknown as { name: string; tier: number } | null,
+    source: row.sources as unknown as { name: string } | null,
     rawItem: row.raw_items as unknown as {
       title: string;
       body: string | null;
@@ -229,12 +246,6 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
     headline: contributionHeadline(row.contribution, displayName(row)),
     snippet: row.snippet ?? "",
     confidence: row.confidence_at,
-  }));
-
-  const sources: TopicSourceEntry[] = items.map((row) => ({
-    name: displayName(row),
-    date: formatShortDate(row.reported_at),
-    tier: (row.source?.tier ?? 2) as TopicSourceEntry["tier"],
     url: row.rawItem?.url ?? null,
   }));
 
@@ -277,7 +288,6 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   const detail: TopicDetail = {
     intro,
     timeline,
-    sources,
     comments,
     sagaStartedAt: topic.first_seen_at,
   };
