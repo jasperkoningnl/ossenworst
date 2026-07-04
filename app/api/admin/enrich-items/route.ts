@@ -7,6 +7,8 @@ export const maxDuration = 300;
 
 const TIME_BUDGET_MS = 250_000;
 const MAX_ITEMS = 300;
+const ENRICH_CONCURRENCY = 4;
+const RETRY_WINDOW_HOURS = 24;
 
 /**
  * Backfill: verrijkt raw_items die al aan een topic hangen maar vóór de
@@ -54,12 +56,21 @@ async function enrichItems(force: boolean) {
   const supabase = createServiceClient();
   const start = Date.now();
 
+  // Items zonder afbeelding waarvan het artikel simpelweg geen og:image heeft
+  // (of de fetch faalt) zouden anders bij élke run opnieuw vooraan staan en
+  // met hun timeouts het budget opeten, zodat oudere items nooit aan de
+  // beurt komen. Het retry-venster maakt de backfill convergent: elke poging
+  // zet enriched_at, en pas na RETRY_WINDOW_HOURS doet zo'n item weer mee.
+  const retryCutoff = new Date(Date.now() - RETRY_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+
   let query = supabase
     .from("raw_items")
     .select("id, url, body, language, publisher_name, image_url, enriched_at, sources(slug, fetch_method)")
     .not("topic_id", "is", null);
   if (!force) {
-    query = query.or("enriched_at.is.null,url.ilike.%news.google.com%,image_url.is.null");
+    query = query.or(
+      `enriched_at.is.null,url.ilike.%news.google.com%,and(image_url.is.null,enriched_at.lt.${retryCutoff})`
+    );
   }
   const { data: items, error } = await query
     .order("fetched_at", { ascending: false })
@@ -71,11 +82,10 @@ async function enrichItems(force: boolean) {
   let processed = 0;
   let resolved = 0;
   let stillGoogle = 0;
+  let imagesFilled = 0;
   let failures = 0;
 
-  for (const item of items ?? []) {
-    if (Date.now() - start > TIME_BUDGET_MS) break;
-
+  const enrichOne = async (item: NonNullable<typeof items>[number]) => {
     const source = item.sources as unknown as { slug?: string; fetch_method?: string } | null;
     const wasGoogle = isGoogleNewsUrl(item.url);
     // Herstelmodus: intro's opnieuw extraheren voor NL-items van
@@ -110,6 +120,7 @@ async function enrichItems(force: boolean) {
       );
 
       processed++;
+      if (!item.image_url && result.imageUrl) imagesFilled++;
       if (wasGoogle) {
         if (isGoogleNewsUrl(result.url)) stillGoogle++;
         else resolved++;
@@ -118,14 +129,23 @@ async function enrichItems(force: boolean) {
       failures++;
       console.error(`Verrijken van ${item.id} mislukt, ga door met de rest:`, err);
     }
+  };
+
+  // Parallel in kleine batches: de fetches zijn I/O-bound en zo past een
+  // volle kandidatenlijst ruim binnen het tijdsbudget.
+  const all = items ?? [];
+  for (let i = 0; i < all.length; i += ENRICH_CONCURRENCY) {
+    if (Date.now() - start > TIME_BUDGET_MS) break;
+    await Promise.all(all.slice(i, i + ENRICH_CONCURRENCY).map(enrichOne));
   }
 
   return NextResponse.json({
-    candidates: items?.length ?? 0,
+    candidates: all.length,
     processed,
     resolved,
     stillGoogle,
+    imagesFilled,
     failures,
-    remaining: (items?.length ?? 0) - processed,
+    remaining: all.length - processed - failures,
   });
 }
