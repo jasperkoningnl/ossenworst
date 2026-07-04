@@ -29,7 +29,8 @@ export const sourceSeeds: SourceSeed[] = [
   { name: "Voetbalzone", slug: "voetbalzone", url: "https://www.voetbalzone.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "scrape", feedUrl: null, enabled: false },
   { name: "Soccernews", slug: "soccernews", url: "https://www.soccernews.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.soccernews.nl/feed", enabled: true },
   { name: "Voetbalprimeur", slug: "voetbalprimeur", url: "https://www.voetbalprimeur.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.voetbalprimeur.nl/feed/news.xml?tag=ajax", enabled: true },
-  { name: "Ajax Showtime", slug: "ajax-showtime", url: "https://www.ajaxshowtime.com", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
+  // Google News-sitemap i.p.v. RSS: titel/datum/afbeelding uit de sitemap, intro via verrijking.
+  { name: "Ajax Showtime", slug: "ajax-showtime", url: "https://www.ajaxshowtime.com", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.ajaxshowtime.com/sitemap/news.xml", enabled: true },
   { name: "Ajax Freaks", slug: "ajax-freaks", url: "https://www.ajaxfreaks.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.ajaxfreaks.nl/page/rss", enabled: false },
   { name: "Headliner.nl", slug: "headliner", url: "https://www.headliner.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "scrape", feedUrl: null, enabled: false },
   { name: "AT5", slug: "at5", url: "https://www.at5.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
