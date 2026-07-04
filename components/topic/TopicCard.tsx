@@ -52,6 +52,9 @@ export function TopicCard({ item }: { item: TopicFeedItem }) {
               src={item.imageUrl}
               alt=""
               loading="lazy"
+              // Nieuws-CDN's blokkeren hotlinks met een vreemde referrer;
+              // zonder referrer laden ze wel.
+              referrerPolicy="no-referrer"
               className="h-[72px] w-[96px] flex-none rounded-md border object-cover"
               style={{ borderColor: "var(--bd)" }}
             />

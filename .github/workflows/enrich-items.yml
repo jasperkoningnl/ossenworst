@@ -7,15 +7,20 @@ name: Enrich items
 # (draai opnieuw zolang "remaining" > 0).
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Herstelmodus: bestaande intro's van NL-items opnieuw extraheren en vervangen"
+        type: boolean
+        default: false
 
 jobs:
   enrich:
     runs-on: ubuntu-latest
     steps:
-      - name: Verrijk bestaande items (bronlinks, publishers, intro's)
+      - name: Verrijk bestaande items (bronlinks, publishers, intro's, afbeeldingen)
         run: |
           HTTP_CODE=$(curl -s --max-time 300 -o response.json -w '%{http_code}' \
-            -X POST "${{ vars.APP_URL }}/api/admin/enrich-items" \
+            -X POST "${{ vars.APP_URL }}/api/admin/enrich-items?force=${{ inputs.force }}" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
           echo "HTTP $HTTP_CODE"
           jq . response.json 2>/dev/null || cat response.json

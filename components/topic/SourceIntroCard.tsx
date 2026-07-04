@@ -22,6 +22,9 @@ export function SourceIntroCard({ intro }: { intro: TopicIntro }) {
           src={intro.imageUrl}
           alt=""
           loading="lazy"
+          // Nieuws-CDN's blokkeren hotlinks met een vreemde referrer;
+          // zonder referrer laden ze wel.
+          referrerPolicy="no-referrer"
           className="max-h-56 w-full border-b object-cover"
           style={{ borderColor: "var(--bd)" }}
         />

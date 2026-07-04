@@ -11,14 +11,20 @@ const MAX_ITEMS = 300;
 /**
  * Backfill: verrijkt raw_items die al aan een topic hangen maar vóór de
  * verrijkingsstap zijn verwerkt (of waarvan de Google News-URL nog niet
- * herleid is). Herstelt zo de bronlinks en publishernamen van bestaand
- * materiaal; nieuwe items worden gewoon in de pipeline verrijkt.
+ * herleid is, of de afbeelding ontbreekt). Herstelt zo de bronlinks,
+ * publishernamen, intro's en afbeeldingen van bestaand materiaal; nieuwe
+ * items worden gewoon in de pipeline verrijkt.
  *
- * Idempotent en veilig her-draaibaar: al-herleide items worden overgeslagen,
- * items waarvan de herleiding eerder faalde worden opnieuw geprobeerd.
+ * Met ?force=true worden bestaande intro's van NL-items opnieuw van de
+ * artikelpagina geëxtraheerd en vervángen — herstelmodus voor items waarvan
+ * een eerdere (slechtere) extractie verkeerde tekst opsloeg (bv. teasers van
+ * gerelateerde berichten). Vertaalde teksten en lange feed-teksten blijven
+ * daarbij ongemoeid.
+ *
+ * Idempotent en veilig her-draaibaar.
  *
  *   curl -X POST -H "Authorization: Bearer $ADMIN_SECRET" \
- *     https://ossenworst.vercel.app/api/admin/enrich-items
+ *     "https://ossenworst.vercel.app/api/admin/enrich-items?force=true"
  */
 export async function POST(request: Request) {
   const expected = process.env.ADMIN_SECRET;
@@ -28,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    return await enrichItems();
+    return await enrichItems(new URL(request.url).searchParams.get("force") === "true");
   } catch (err) {
     console.error("enrich-items faalde:", err);
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
@@ -44,15 +50,18 @@ const PUBLISHER_BY_SLUG: Record<string, string> = {
   "gnews-parool": "Het Parool",
 };
 
-async function enrichItems() {
+async function enrichItems(force: boolean) {
   const supabase = createServiceClient();
   const start = Date.now();
 
-  const { data: items, error } = await supabase
+  let query = supabase
     .from("raw_items")
-    .select("id, url, body, language, publisher_name, image_url, enriched_at, sources(slug)")
-    .not("topic_id", "is", null)
-    .or("enriched_at.is.null,url.ilike.%news.google.com%")
+    .select("id, url, body, language, publisher_name, image_url, enriched_at, sources(slug, fetch_method)")
+    .not("topic_id", "is", null);
+  if (!force) {
+    query = query.or("enriched_at.is.null,url.ilike.%news.google.com%,image_url.is.null");
+  }
+  const { data: items, error } = await query
     .order("fetched_at", { ascending: false })
     .limit(MAX_ITEMS);
   if (error) {
@@ -67,8 +76,16 @@ async function enrichItems() {
   for (const item of items ?? []) {
     if (Date.now() - start > TIME_BUDGET_MS) break;
 
-    const source = item.sources as unknown as { slug?: string } | null;
+    const source = item.sources as unknown as { slug?: string; fetch_method?: string } | null;
     const wasGoogle = isGoogleNewsUrl(item.url);
+    // Herstelmodus: intro's opnieuw extraheren voor NL-items van
+    // scrape-bronnen (daar kwam de body sowieso van de artikelpagina of een
+    // kaal lijstsnippet) en voor korte bodies (snippets of misextracties).
+    // Lange feed-teksten (content:encoded) blijven staan.
+    const forceIntro =
+      force &&
+      item.language === "nl" &&
+      (source?.fetch_method === "scrape" || (item.body?.length ?? 0) < 500);
 
     try {
       const result = await enrichRawItem(
@@ -82,12 +99,14 @@ async function enrichItems() {
           publisher_name:
             item.publisher_name ?? (source?.slug ? PUBLISHER_BY_SLUG[source.slug] ?? null : null),
           image_url: item.image_url,
-          // Herleiding opnieuw proberen voor items die nog op Google News wijzen.
-          enriched_at: wasGoogle ? null : item.enriched_at,
+          // Opnieuw verrijken als de URL nog op Google News wijst, de
+          // afbeelding ontbreekt (items van vóór de image-ondersteuning) of
+          // de herstelmodus actief is.
+          enriched_at: wasGoogle || !item.image_url || forceIntro ? null : item.enriched_at,
         },
         // Niet-NL items zijn al vertaald: hun body niet overschrijven met een
         // vers gescrapete (buitenlandse) intro.
-        { skipIntro: item.language !== "nl" }
+        { skipIntro: item.language !== "nl", forceIntro }
       );
 
       processed++;

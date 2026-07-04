@@ -5,24 +5,42 @@ import { parseScrapeSource } from "@/lib/pipeline/fetchers/scrape";
 import { isGoogleNewsUrl } from "@/lib/pipeline/google-news";
 import type { Source } from "@/lib/types/database";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const RECENT_DAYS = 7;
 const MIN_BODY_CHARS = 80;
+// Bronnen parallel checken; elke fetch heeft een 8s-timeout dus dit houdt de
+// all-modus ruim binnen maxDuration.
+const CHECK_CONCURRENCY = 6;
+
+interface SourceCheckResult {
+  slug: string;
+  name: string;
+  ok: boolean;
+  error?: string;
+  checks: Record<string, boolean>;
+  stats?: Record<string, number>;
+  sample?: { title: string; url: string; published_at: string | null; introChars: number; afbeelding: boolean }[];
+  enabled: boolean;
+}
 
 /**
- * Kwaliteitscheck van één bron (dry-run, schrijft niets weg) voor de
+ * Kwaliteitscheck van bronnen (dry-run, schrijft geen items weg) voor de
  * gecontroleerde opbouw van de feed. Rapporteert per bron:
  * - haalt hij berichten op (werkende feed of scrape-config)
  * - zijn de berichten recent en gedateerd
  * - komen er intro's en afbeeldingen mee
  * - linken de items naar de bron zelf (en niet naar Google News)
  *
- * Met ?enable=true wordt de bron ingeschakeld als de kerncriteria
- * (berichten + recent + correcte links) slagen.
+ * Modi:
+ * - ?slug=nos-sport — één bron checken.
+ * - zonder slug — alle bronnen met een feed_url of scrape_config checken.
+ * - &enable=true — bronnen die de kerncriteria halen worden ingeschakeld en
+ *   bronnen die niets ophalen worden uitgeschakeld (zodat een kapotte feed
+ *   niet elke tick blijft falen tot iemand hem fixt).
  *
  *   curl -X POST -H "Authorization: Bearer $ADMIN_SECRET" \
- *     "https://ossenworst.vercel.app/api/admin/check-source?slug=nos-sport&enable=true"
+ *     "https://ossenworst.vercel.app/api/admin/check-source?enable=true"
  */
 export async function POST(request: Request) {
   const expected = process.env.ADMIN_SECRET;
@@ -34,41 +52,95 @@ export async function POST(request: Request) {
   const params = new URL(request.url).searchParams;
   const slug = params.get("slug");
   const enable = params.get("enable") === "true";
-  if (!slug) {
-    return NextResponse.json({ error: "geef een bron op met ?slug=…" }, { status: 400 });
-  }
 
   const supabase = createServiceClient();
-  const { data: source, error } = await supabase
-    .from("sources")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
+
+  let query = supabase.from("sources").select("*");
+  if (slug) {
+    query = query.eq("slug", slug);
+  } else {
+    // Alle checkbare bronnen: met een feed of met een scrape-config.
+    query = query.or("feed_url.not.is.null,scrape_config.not.is.null");
+  }
+  const { data: sources, error } = await query.order("name");
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  if (!source) {
+  if (!sources || sources.length === 0) {
     return NextResponse.json(
-      { error: `onbekende bron '${slug}' — draai eerst de Seed sources-workflow` },
+      { error: slug ? `onbekende bron '${slug}' — draai eerst de Seed sources-workflow` : "geen checkbare bronnen" },
       { status: 404 }
     );
   }
 
+  // Google News-bronnen zijn een bewust laatste redmiddel en doen niet mee in
+  // de all-modus; expliciet checken op slug kan wel.
+  const checkable = slug
+    ? (sources as Source[])
+    : (sources as Source[]).filter((s) => !s.feed_url?.includes("news.google.com"));
+
+  const results: SourceCheckResult[] = [];
+  for (let i = 0; i < checkable.length; i += CHECK_CONCURRENCY) {
+    const batch = checkable.slice(i, i + CHECK_CONCURRENCY);
+    results.push(...(await Promise.all(batch.map((source) => checkSource(source)))));
+  }
+
+  let enabledCount = 0;
+  let disabledCount = 0;
+  if (enable) {
+    for (const result of results) {
+      const source = checkable.find((s) => s.slug === result.slug)!;
+      if (result.ok && !source.enabled) {
+        const { error: updateError } = await supabase.from("sources").update({ enabled: true }).eq("id", source.id);
+        if (!updateError) {
+          result.enabled = true;
+          enabledCount++;
+        }
+      } else if (!result.checks.haaltBerichtenOp && source.enabled) {
+        // Dode feed of kapotte selectors: uitzetten zodat hij niet elke tick
+        // blijft falen; na een fix zet een nieuwe check hem weer aan.
+        const { error: updateError } = await supabase.from("sources").update({ enabled: false }).eq("id", source.id);
+        if (!updateError) {
+          result.enabled = false;
+          disabledCount++;
+        }
+      }
+    }
+  }
+
+  if (slug) {
+    return NextResponse.json({ ...results[0], enableRequested: enable });
+  }
+
+  return NextResponse.json({
+    checked: results.length,
+    passed: results.filter((r) => r.ok).length,
+    failed: results.filter((r) => !r.ok).length,
+    enabledNow: enabledCount,
+    disabledNow: disabledCount,
+    enableRequested: enable,
+    // Voorbeelditems weglaten in de all-modus: 40 bronnen × 5 samples maakt
+    // de respons onleesbaar; per-slug-modus toont ze wel.
+    results: results.map((r) => ({ ...r, sample: undefined })),
+  });
+}
+
+async function checkSource(source: Source): Promise<SourceCheckResult> {
   let items: ParsedFeedItem[];
   try {
     items =
       source.fetch_method === "scrape"
-        ? await parseScrapeSource(source as Source)
-        : await parseRssSource(source as Source);
+        ? await parseScrapeSource(source)
+        : await parseRssSource(source);
   } catch (err) {
-    return NextResponse.json({
-      slug,
+    return {
+      slug: source.slug,
       name: source.name,
       ok: false,
       error: (err as Error).message,
       checks: { haaltBerichtenOp: false },
       enabled: source.enabled,
-    });
+    };
   }
 
   const recentCutoff = Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000;
@@ -98,24 +170,12 @@ export async function POST(request: Request) {
   };
   // Kerncriteria voor inschakelen; intro's/afbeeldingen kunnen de
   // verrijkingsstap nog aanvullen en zijn daarom adviserend.
-  const pass = checks.haaltBerichtenOp && checks.recent && checks.linktNaarBron;
+  const ok = checks.haaltBerichtenOp && checks.recent && checks.linktNaarBron;
 
-  let enabledNow = source.enabled as boolean;
-  if (enable && pass) {
-    const { error: enableError } = await supabase
-      .from("sources")
-      .update({ enabled: true })
-      .eq("id", source.id);
-    if (enableError) {
-      return NextResponse.json({ error: enableError.message }, { status: 500 });
-    }
-    enabledNow = true;
-  }
-
-  return NextResponse.json({
-    slug,
+  return {
+    slug: source.slug,
     name: source.name,
-    ok: pass,
+    ok,
     checks,
     stats: {
       items: items.length,
@@ -133,7 +193,6 @@ export async function POST(request: Request) {
       introChars: i.body?.length ?? 0,
       afbeelding: Boolean(i.image_url),
     })),
-    enabled: enabledNow,
-    enableRequested: enable,
-  });
+    enabled: source.enabled,
+  };
 }
