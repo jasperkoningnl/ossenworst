@@ -5,8 +5,12 @@ import type { ConfidenceLevel } from "@/lib/types/enums";
 export interface TopicFeedItem extends Topic {
   /** Korte teaser voor de feed-rij: de intro van de meest recente bron. */
   teaser: string;
-  /** Afbeelding van de meest recente bron (thumbnail in de feed). */
-  imageUrl: string | null;
+  /**
+   * Afbeeldingskandidaten, nieuwste bron eerst. De UI probeert ze op volgorde:
+   * laadt de eerste niet (dode link, hotlink-blokkade), dan schakelt hij door
+   * naar de afbeelding van de volgende bron van hetzelfde topic.
+   */
+  imageUrls: string[];
   sourceCount: number;
   commentCount: number;
 }
@@ -25,7 +29,8 @@ export interface TopicIntro {
   text: string;
   sourceName: string;
   url: string | null;
-  imageUrl: string | null;
+  /** Zie TopicFeedItem.imageUrls: kandidaten op volgorde, met client-side fallback. */
+  imageUrls: string[];
 }
 
 export interface TopicComment {

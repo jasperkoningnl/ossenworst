@@ -9,6 +9,11 @@ import * as cheerio from "cheerio";
 
 const FETCH_TIMEOUT_MS = 8000;
 const USER_AGENT = "OssenworstManager/1.0 (+https://ossenworst.nl)";
+// Sommige sites (Akamai/Cloudflare-botwalls, o.a. ajax.nl) geven 403 op
+// bot-achtige UA's; een browser-UA als retry lost dat op — zelfde patroon
+// als de feed-fetch in fetchers/rss.ts.
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 const MAX_INTRO_CHARS = 800;
 const MIN_PARAGRAPH_CHARS = 60;
 // Alinea-oogst is pas betrouwbaar bij minstens deze totale lengte; daaronder
@@ -103,11 +108,17 @@ function collectParagraphs($: cheerio.CheerioAPI, selector: string): string {
 }
 
 export async function fetchArticleIntro(url: string): Promise<ArticleIntro> {
-  const res = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml" },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    redirect: "follow",
-  });
+  const doFetch = (userAgent: string) =>
+    fetch(url, {
+      headers: { "User-Agent": userAgent, Accept: "text/html,application/xhtml+xml" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      redirect: "follow",
+    });
+
+  let res = await doFetch(USER_AGENT);
+  if (res.status === 403 || res.status === 429) {
+    res = await doFetch(BROWSER_USER_AGENT);
+  }
   if (!res.ok || !(res.headers.get("content-type") ?? "").includes("html")) {
     return { intro: null, siteName: null, imageUrl: null };
   }
