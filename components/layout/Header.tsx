@@ -2,12 +2,16 @@ import Link from "next/link";
 import { OssenworstLogo } from "@/components/ui/OssenworstLogo";
 import { getLatestUpdateAt } from "@/lib/data/topics";
 
-/** "4 jul, 15:42". */
+const HEADER_TIMEZONE = "Europe/Amsterdam";
+
+/** "4 jul, 15:42" (in Nederlandse tijd, dus incl. zomertijd). */
 function formatUpdateTime(iso: string): string {
   const d = new Date(iso);
-  const day = d.getUTCDate();
-  const month = d.toLocaleString("nl-NL", { month: "short", timeZone: "UTC" }).replace(".", "");
-  const time = d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+  const day = Number(
+    d.toLocaleString("nl-NL", { day: "numeric", timeZone: HEADER_TIMEZONE })
+  );
+  const month = d.toLocaleString("nl-NL", { month: "short", timeZone: HEADER_TIMEZONE }).replace(".", "");
+  const time = d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: HEADER_TIMEZONE });
   return `${day} ${month}, ${time}`;
 }
 
