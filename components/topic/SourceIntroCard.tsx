@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { ArticleImage } from "@/components/topic/ArticleImage";
 import type { TopicIntro } from "@/lib/types/feed";
 
 /**
@@ -17,14 +18,8 @@ export function SourceIntroCard({ intro }: { intro: TopicIntro }) {
         </span>
       </div>
       {intro.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element -- externe nieuwsafbeeldingen, domeinen onbekend
-        <img
+        <ArticleImage
           src={intro.imageUrl}
-          alt=""
-          loading="lazy"
-          // Nieuws-CDN's blokkeren hotlinks met een vreemde referrer;
-          // zonder referrer laden ze wel.
-          referrerPolicy="no-referrer"
           className="max-h-56 w-full border-b object-cover"
           style={{ borderColor: "var(--bd)" }}
         />

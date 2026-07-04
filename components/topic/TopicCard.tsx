@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/theme/colors";
+import { ArticleImage } from "./ArticleImage";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import type { TopicFeedItem } from "@/lib/types/feed";
 
@@ -47,14 +48,8 @@ export function TopicCard({ item }: { item: TopicFeedItem }) {
             )}
           </div>
           {item.imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element -- externe nieuwsafbeeldingen, domeinen onbekend
-            <img
+            <ArticleImage
               src={item.imageUrl}
-              alt=""
-              loading="lazy"
-              // Nieuws-CDN's blokkeren hotlinks met een vreemde referrer;
-              // zonder referrer laden ze wel.
-              referrerPolicy="no-referrer"
               className="h-[72px] w-[96px] flex-none rounded-md border object-cover"
               style={{ borderColor: "var(--bd)" }}
             />
