@@ -11,7 +11,7 @@ export const FEED_FILTERS: { label: string; category: TopicCategory | null }[] =
   { label: "Eredivisie", category: "EREDIVISIE" },
   { label: "Ex-spelers", category: "EX-SPELER" },
   { label: "Wedstrijden", category: "WEDSTRIJD" },
-  { label: "Vrouwenvoetbal", category: "VROUWENVOETBAL" },
+  { label: "Vrouwen", category: "VROUWEN" },
 ];
 
 export function FilterTabs({
