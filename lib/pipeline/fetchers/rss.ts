@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Source } from "@/lib/types/database";
 import { decodeGoogleNewsUrl } from "@/lib/pipeline/google-news";
 import { MAX_ITEM_AGE_DAYS } from "@/lib/pipeline/relevance";
+import { isUsableImageUrl } from "@/lib/utils/image";
 import { htmlToText, truncate } from "@/lib/utils/text";
 
 /** Extra velden bovenop rss-parser's defaults (zie customFields hieronder). */
@@ -163,10 +164,7 @@ function imageUrlFor(item: FeedItem): string | null {
   // spacers leveren kapotte/onzichtbare "afbeeldingen" op in de feed.
   const html = item.contentEncoded || item.content || "";
   const fromContent = html.match(/<img[^>]+src="(https?:\/\/[^"]+)"/i)?.[1] ?? null;
-  if (fromContent && /pixel|spacer|1x1|doubleclick|feedburner|\.svg($|\?)/i.test(fromContent)) {
-    return null;
-  }
-  return fromContent;
+  return isUsableImageUrl(fromContent) ? fromContent : null;
 }
 
 // Nieuws-sitemaps kunnen honderden URL's bevatten; alleen de nieuwste

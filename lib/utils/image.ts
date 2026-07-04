@@ -6,7 +6,11 @@
  * onError-fallback heen. Daarom hard filteren op URL-vorm.
  */
 
-const JUNK_IMAGE_RE = /pixel|spacer|1x1|blank|placeholder|doubleclick|feedburner/i;
+// "1x1" en "blank" alleen als los token (begrensd door niet-alfanumeriek):
+// als substring matchen ze ook legitieme media-ID's zoals ajax.nl's
+// "/media/gc3fx1x1/thomas1920.jpg".
+const JUNK_IMAGE_RE =
+  /pixel|spacer|placeholder|doubleclick|feedburner|(^|[^0-9a-z])(1x1|blank)(?![0-9a-z])/i;
 
 export function isUsableImageUrl(url: string | null | undefined): url is string {
   if (!url) return false;
