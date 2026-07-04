@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Source } from "@/lib/types/database";
 import { isTooOld } from "@/lib/pipeline/relevance";
+import { isUsableImageUrl } from "@/lib/utils/image";
 import type { ParsedFeedItem } from "./rss";
 
 export interface ScrapeConfig {
@@ -63,12 +64,26 @@ function extractArticles(html: string, config: ScrapeConfig, baseUrl: string, la
       }
     }
 
+    // Lazy-loading zet vaak een data-URI-placeholder in src en het echte
+    // beeld in data-src/srcset; daarom alle attributen proberen en alleen een
+    // URL accepteren die door isUsableImageUrl komt.
     const imageEl = $el.find(config.imageSelector ?? "img").first();
-    const rawImage =
-      imageEl.attr(config.imageAttribute ?? "src") ??
-      imageEl.attr("data-src") ??
-      imageEl.attr("srcset")?.split(/\s+/)[0];
-    const image_url = rawImage ? resolveUrl(rawImage, baseUrl) : null;
+    const imageCandidates = [
+      imageEl.attr(config.imageAttribute ?? "src"),
+      imageEl.attr("data-src"),
+      imageEl.attr("data-lazy-src"),
+      imageEl.attr("srcset")?.split(/[\s,]+/)[0],
+      imageEl.attr("data-srcset")?.split(/[\s,]+/)[0],
+    ];
+    let image_url: string | null = null;
+    for (const candidate of imageCandidates) {
+      if (!candidate) continue;
+      const resolved = resolveUrl(candidate, baseUrl);
+      if (isUsableImageUrl(resolved)) {
+        image_url = resolved;
+        break;
+      }
+    }
 
     articles.push({
       external_id: url || title,

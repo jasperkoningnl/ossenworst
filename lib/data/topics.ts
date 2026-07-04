@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { publisherNameFromUrl } from "@/lib/pipeline/google-news";
 import { truncate } from "@/lib/utils/text";
+import { isUsableImageUrl } from "@/lib/utils/image";
 import type { Topic } from "@/lib/types/database";
 import type {
   TopicComment,
@@ -63,7 +64,7 @@ function latestInfoFromRow(row: TopicItemRow): LatestItemInfo {
     title: rawItem?.title ?? null,
     body: rawItem?.body ?? null,
     url: rawItem?.url ?? null,
-    imageUrls: rawItem?.image_url ? [rawItem.image_url] : [],
+    imageUrls: isUsableImageUrl(rawItem?.image_url) ? [rawItem!.image_url!] : [],
     sourceName: sourceDisplayName(
       rawItem?.publisher_name ?? null,
       source?.name ?? null,
@@ -102,8 +103,8 @@ async function fetchLatestItems(
       // items gaan als fallback-kandidaten mee (nieuwste eerst), zodat de UI
       // kan doorschakelen als een afbeelding niet laadt.
       const rawItem = row.raw_items as { image_url: string | null } | null;
-      if (rawItem?.image_url && !existing.imageUrls.includes(rawItem.image_url)) {
-        existing.imageUrls.push(rawItem.image_url);
+      if (isUsableImageUrl(rawItem?.image_url) && !existing.imageUrls.includes(rawItem!.image_url!)) {
+        existing.imageUrls.push(rawItem!.image_url!);
       }
     }
   }
@@ -273,7 +274,7 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
       [...items]
         .reverse()
         .map((row) => row.rawItem?.image_url)
-        .filter((url): url is string => Boolean(url))
+        .filter((url): url is string => isUsableImageUrl(url))
     ),
   ];
 
