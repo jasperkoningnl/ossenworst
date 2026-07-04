@@ -72,8 +72,14 @@ async function enrichItems(force: boolean) {
       `enriched_at.is.null,url.ilike.%news.google.com%,and(image_url.is.null,enriched_at.lt.${retryCutoff})`
     );
   }
+  // Op fetched_at aflopend sorteren zou bij een backlog groter dan MAX_ITEMS
+  // permanent dezelfde (nieuwste) kandidaten bovenaan houden en de oudste
+  // kapotte items nooit meer bereiken, ongeacht hoe vaak deze route draait.
+  // Op enriched_at oplopend (nooit-verrijkt eerst) sorteren garandeert dat elke
+  // run de langst-wachtende items oppakt, zodat de backlog over meerdere runs
+  // altijd convergeert.
   const { data: items, error } = await query
-    .order("fetched_at", { ascending: false })
+    .order("enriched_at", { ascending: true, nullsFirst: true })
     .limit(MAX_ITEMS);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

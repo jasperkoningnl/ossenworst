@@ -33,6 +33,61 @@ export interface ArticleIntro {
   imageUrl: string | null;
 }
 
+// Bestandsnaam-patronen die vrijwel nooit de hoofdafbeelding zijn: logo's,
+// iconen, tracking-pixels — de <img>-fallback zou deze anders per ongeluk
+// als artikelafbeelding oppikken.
+const NON_CONTENT_IMAGE_RE = /logo|icon|avatar|sprite|placeholder|pixel|spacer|favicon/i;
+
+function resolveMaybeRelative(href: string, baseUrl: string): string | null {
+  try {
+    return new URL(href, baseUrl).href;
+  } catch {
+    return null;
+  }
+}
+
+/** Eerste bruikbare <img> binnen de artikeltekst — laatste redmiddel als de pagina geen og:image/twitter:image heeft. */
+function firstContentImage($: cheerio.CheerioAPI, baseUrl: string): string | null {
+  const candidates = $("article img, main img").toArray();
+  for (const el of candidates) {
+    const $el = $(el);
+    if ($el.parents(NON_ARTICLE_ANCESTORS).length > 0) continue;
+    const src = $el.attr("src") || $el.attr("data-src") || $el.attr("srcset")?.split(/\s+/)[0];
+    if (!src || NON_CONTENT_IMAGE_RE.test(src) || src.endsWith(".svg")) continue;
+    try {
+      return new URL(src, baseUrl).href;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/** Afbeelding uit JSON-LD-structured data (schema.org NewsArticle/Article "image"). */
+function imageFromJsonLd($: cheerio.CheerioAPI): string | null {
+  for (const el of $('script[type="application/ld+json"]').toArray()) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse($(el).contents().text());
+    } catch {
+      continue;
+    }
+    for (const node of Array.isArray(parsed) ? parsed : [parsed]) {
+      const image = (node as { image?: unknown } | null)?.image;
+      const url =
+        typeof image === "string"
+          ? image
+          : Array.isArray(image)
+            ? image.find((i) => typeof i === "string")
+            : typeof (image as { url?: unknown })?.url === "string"
+              ? (image as { url: string }).url
+              : null;
+      if (url && /^https?:\/\//.test(url)) return url;
+    }
+  }
+  return null;
+}
+
 function collectParagraphs($: cheerio.CheerioAPI, selector: string): string {
   const parts: string[] = [];
   let total = 0;
@@ -60,9 +115,16 @@ export async function fetchArticleIntro(url: string): Promise<ArticleIntro> {
   const $ = cheerio.load(await res.text());
 
   const siteName = $('meta[property="og:site_name"]').attr("content")?.trim() || null;
+  // og:image/twitter:image dekken bijna alle sites; ontbreken ze (bv. sommige
+  // clubsites zonder social-meta), dan proberen we JSON-LD-structured data en
+  // als laatste redmiddel de eerste echte artikelafbeelding in de HTML.
+  const imageSrcHref = $('link[rel="image_src"]').attr("href")?.trim();
   const imageUrl =
     $('meta[property="og:image"]').attr("content")?.trim() ||
     $('meta[name="twitter:image"]').attr("content")?.trim() ||
+    (imageSrcHref ? resolveMaybeRelative(imageSrcHref, res.url || url) : null) ||
+    imageFromJsonLd($) ||
+    firstContentImage($, res.url || url) ||
     null;
   const metaDescription =
     $('meta[property="og:description"]').attr("content")?.trim() ||
