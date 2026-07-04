@@ -1,0 +1,39 @@
+name: Force topic images
+
+# Handmatig te starten: forceert een verse afbeelding-extractie voor specifieke
+# topics (op slug), ongeacht enriched_at/afbeelding-status. Bedoeld voor topics
+# die buiten het venster van de reguliere "Enrich items"-backfill zijn gevallen
+# (die kijkt alleen naar de 300 meest recent opgehaalde raw_items) en daardoor
+# nooit meer opnieuw geprobeerd worden.
+on:
+  workflow_dispatch:
+    inputs:
+      slugs:
+        description: "Komma-gescheiden topic-slugs, bv. ajax-contracteert-kealyn-thomas-82ab80d4,..."
+        type: string
+        required: true
+
+jobs:
+  force-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Forceer afbeelding-herstel voor opgegeven topics
+        run: |
+          HTTP_CODE=$(curl -s --max-time 100 -o response.json -w '%{http_code}' \
+            -X POST "${{ vars.APP_URL }}/api/admin/force-topic-images?slugs=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${{ inputs.slugs }}")" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
+          echo "HTTP $HTTP_CODE"
+          jq . response.json 2>/dev/null || cat response.json
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::force-topic-images gaf HTTP $HTTP_CODE — zie de response hierboven"
+            exit 1
+          fi
+          {
+            echo "## Force topic images"
+            echo ""
+            echo "Topics gecheckt: $(jq -r '.topicsChecked' response.json) — afbeeldingen gevuld: $(jq -r '.imagesFilled' response.json) — nog steeds zonder afbeelding: $(jq -r '.stillMissing | join(\", \")' response.json)"
+            echo ""
+            echo '```json'
+            cat response.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
