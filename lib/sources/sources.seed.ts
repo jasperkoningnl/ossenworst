@@ -30,7 +30,7 @@ export const sourceSeeds: SourceSeed[] = [
   { name: "Soccernews", slug: "soccernews", url: "https://www.soccernews.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.soccernews.nl/feed", enabled: true },
   { name: "Voetbalprimeur", slug: "voetbalprimeur", url: "https://www.voetbalprimeur.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.voetbalprimeur.nl/feed/news.xml?tag=ajax", enabled: true },
   { name: "Ajax Showtime", slug: "ajax-showtime", url: "https://www.ajaxshowtime.com", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
-  { name: "Ajax Freaks", slug: "ajax-freaks", url: "https://www.ajaxfreaks.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.ajaxfreaks.nl/page/rss", enabled: true },
+  { name: "Ajax Freaks", slug: "ajax-freaks", url: "https://www.ajaxfreaks.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.ajaxfreaks.nl/page/rss", enabled: false },
   { name: "Headliner.nl", slug: "headliner", url: "https://www.headliner.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "scrape", feedUrl: null, enabled: false },
   { name: "AT5", slug: "at5", url: "https://www.at5.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
   { name: "De Volkskrant", slug: "volkskrant", url: "https://www.volkskrant.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "scrape", feedUrl: null, enabled: false },
@@ -51,7 +51,7 @@ export const sourceSeeds: SourceSeed[] = [
   { name: "FourFourTwo", slug: "fourfourtwo", url: "https://www.fourfourtwo.com", tier: 2, country: "GB", language: "en", fetchMethod: "rss", feedUrl: null, enabled: false },
   { name: "Goal.com", slug: "goal-com", url: "https://www.goal.com", tier: 2, country: "GB", language: "en", fetchMethod: "rss", feedUrl: null, enabled: false },
   { name: "ESPN FC", slug: "espn-fc", url: "https://www.espn.com/soccer", tier: 2, country: "GB", language: "en", fetchMethod: "rss", feedUrl: null, enabled: false },
-  { name: "90min", slug: "90min", url: "https://www.90min.com", tier: 3, country: "GB", language: "en", fetchMethod: "rss", feedUrl: "https://www.90min.com/posts.rss", enabled: true },
+  { name: "90min", slug: "90min", url: "https://www.90min.com", tier: 3, country: "GB", language: "en", fetchMethod: "rss", feedUrl: "https://www.90min.com/posts.rss", enabled: false },
   { name: "SoccerNews.com", slug: "soccernews-com", url: "https://www.soccernews.com", tier: 3, country: "GB", language: "en", fetchMethod: "rss", feedUrl: "https://www.soccernews.com/feed", enabled: true },
   { name: "Football Italia", slug: "football-italia", url: "https://football-italia.net", tier: 2, country: "IT", language: "en", fetchMethod: "rss", feedUrl: "https://football-italia.net/rss.xml", enabled: true },
   { name: "Football Espana", slug: "football-espana", url: "https://www.footballespana.net", tier: 2, country: "ES", language: "en", fetchMethod: "rss", feedUrl: "https://football-espana.net/feed", enabled: true },
@@ -73,14 +73,14 @@ export const sourceSeeds: SourceSeed[] = [
 
   // --- Spanje ---
   { name: "Marca", slug: "marca", url: "https://www.marca.com", tier: 2, country: "ES", language: "es", fetchMethod: "rss", feedUrl: "https://e00-marca.uecdn.es/rss/portada.xml", enabled: true },
-  { name: "Marca English", slug: "marca-en", url: "https://www.marca.com/en", tier: 2, country: "ES", language: "en", fetchMethod: "rss", feedUrl: "https://e00-marca.uecdn.es/rss/en/index.xml", enabled: true },
+  { name: "Marca English", slug: "marca-en", url: "https://www.marca.com/en", tier: 2, country: "ES", language: "en", fetchMethod: "rss", feedUrl: "https://e00-marca.uecdn.es/rss/en/index.xml", enabled: false },
   { name: "AS", slug: "as", url: "https://as.com", tier: 2, country: "ES", language: "es", fetchMethod: "rss", feedUrl: null, enabled: false },
   { name: "Sport", slug: "sport-es", url: "https://www.sport.es", tier: 2, country: "ES", language: "es", fetchMethod: "rss", feedUrl: null, enabled: false },
-  { name: "Mundo Deportivo", slug: "mundo-deportivo", url: "https://www.mundodeportivo.com", tier: 2, country: "ES", language: "es", fetchMethod: "rss", feedUrl: "https://www.mundodeportivo.com/feed/rss/", enabled: true },
+  { name: "Mundo Deportivo", slug: "mundo-deportivo", url: "https://www.mundodeportivo.com", tier: 2, country: "ES", language: "es", fetchMethod: "rss", feedUrl: "https://www.mundodeportivo.com/feed/rss/", enabled: false },
 
   // --- Italië ---
-  { name: "La Gazzetta dello Sport", slug: "gazzetta", url: "https://www.gazzetta.it", tier: 2, country: "IT", language: "it", fetchMethod: "rss", feedUrl: "https://www.gazzetta.it/rss/home.xml", enabled: true },
-  { name: "Corriere dello Sport", slug: "corriere-dello-sport", url: "https://www.corrieredellosport.it", tier: 2, country: "IT", language: "it", fetchMethod: "rss", feedUrl: "https://www.corrieredellosport.it/rss/rss.shtml", enabled: true },
+  { name: "La Gazzetta dello Sport", slug: "gazzetta", url: "https://www.gazzetta.it", tier: 2, country: "IT", language: "it", fetchMethod: "rss", feedUrl: "https://www.gazzetta.it/rss/home.xml", enabled: false },
+  { name: "Corriere dello Sport", slug: "corriere-dello-sport", url: "https://www.corrieredellosport.it", tier: 2, country: "IT", language: "it", fetchMethod: "rss", feedUrl: "https://www.corrieredellosport.it/rss/rss.shtml", enabled: false },
   { name: "Tuttosport", slug: "tuttosport", url: "https://www.tuttosport.com", tier: 2, country: "IT", language: "it", fetchMethod: "rss", feedUrl: "https://www.tuttosport.com/rss/calcio", enabled: true },
   { name: "TuttoMercatoWeb", slug: "tuttomercatoweb", url: "https://www.tuttomercatoweb.com", tier: 2, country: "IT", language: "it", fetchMethod: "rss", feedUrl: null, enabled: false },
   { name: "Calciomercato.com", slug: "calciomercato", url: "https://www.calciomercato.com", tier: 2, country: "IT", language: "it", fetchMethod: "rss", feedUrl: "https://feeds.footballco.com/calcio/", enabled: true },
@@ -101,8 +101,8 @@ export const sourceSeeds: SourceSeed[] = [
   { name: "RMC Sport", slug: "rmc-sport", url: "https://rmcsport.bfmtv.com", tier: 2, country: "FR", language: "fr", fetchMethod: "rss", feedUrl: null, enabled: false },
 
   // --- Portugal ---
-  { name: "A Bola", slug: "a-bola", url: "https://www.abola.pt", tier: 2, country: "PT", language: "pt", fetchMethod: "rss", feedUrl: "https://www.abola.pt/rss/index.aspx", enabled: true },
-  { name: "Record", slug: "record", url: "https://www.record.pt", tier: 2, country: "PT", language: "pt", fetchMethod: "rss", feedUrl: "https://www.record.pt/rss/rss.asp", enabled: true },
+  { name: "A Bola", slug: "a-bola", url: "https://www.abola.pt", tier: 2, country: "PT", language: "pt", fetchMethod: "rss", feedUrl: "https://www.abola.pt/rss/index.aspx", enabled: false },
+  { name: "Record", slug: "record", url: "https://www.record.pt", tier: 2, country: "PT", language: "pt", fetchMethod: "rss", feedUrl: "https://www.record.pt/rss/rss.asp", enabled: false },
   { name: "O Jogo", slug: "o-jogo", url: "https://www.ojogo.pt", tier: 2, country: "PT", language: "pt", fetchMethod: "rss", feedUrl: "https://www.ojogo.pt/rss/Noticias.rss", enabled: true },
 
   // --- Turkije ---
@@ -128,8 +128,8 @@ export const sourceSeeds: SourceSeed[] = [
   { name: "FutbolRed", slug: "futbolred", url: "https://www.futbolred.com", tier: 3, country: "CO", language: "es", fetchMethod: "rss", feedUrl: "https://www.futbolred.com/rss", enabled: true },
 
   // --- Rusland ---
-  { name: "Sport Express", slug: "sport-express", url: "https://www.sport-express.ru", tier: 2, country: "RU", language: "ru", fetchMethod: "rss", feedUrl: "https://www.sport-express.ru/services/materials/news/se/football/rss/", enabled: true },
-  { name: "Sports.ru", slug: "sports-ru", url: "https://www.sports.ru", tier: 2, country: "RU", language: "ru", fetchMethod: "rss", feedUrl: "https://www.sports.ru/docs/rss/", enabled: true },
+  { name: "Sport Express", slug: "sport-express", url: "https://www.sport-express.ru", tier: 2, country: "RU", language: "ru", fetchMethod: "rss", feedUrl: "https://www.sport-express.ru/services/materials/news/se/football/rss/", enabled: false },
+  { name: "Sports.ru", slug: "sports-ru", url: "https://www.sports.ru", tier: 2, country: "RU", language: "ru", fetchMethod: "rss", feedUrl: "https://www.sports.ru/docs/rss/", enabled: false },
   { name: "Championat", slug: "championat", url: "https://www.championat.com", tier: 2, country: "RU", language: "ru", fetchMethod: "rss", feedUrl: null, enabled: false },
 
   // --- Azië ---
