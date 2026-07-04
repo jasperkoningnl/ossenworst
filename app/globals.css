@@ -131,16 +131,3 @@ body {
 .osw-scroll {
   scrollbar-width: none;
 }
-
-@keyframes osw-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-.osw-pulse {
-  animation: osw-pulse 1.8s infinite;
-}

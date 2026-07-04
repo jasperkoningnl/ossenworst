@@ -69,9 +69,6 @@ export function TopicCard({ item }: { item: TopicFeedItem }) {
               {item.commentCount} {item.commentCount === 1 ? "reactie" : "reacties"}
             </span>
           )}
-          <span className="ml-auto font-bold" style={{ color: "var(--ajax-red)" }}>
-            Tijdlijn ›
-          </span>
         </div>
       </div>
     </Link>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { TopicCategory } from "@/lib/types/enums";
 
 export const FEED_FILTERS: { label: string; category: TopicCategory | null }[] = [
@@ -10,6 +11,7 @@ export const FEED_FILTERS: { label: string; category: TopicCategory | null }[] =
   { label: "Eredivisie", category: "EREDIVISIE" },
   { label: "Ex-spelers", category: "EX-SPELER" },
   { label: "Wedstrijden", category: "WEDSTRIJD" },
+  { label: "Vrouwenvoetbal", category: "VROUWENVOETBAL" },
 ];
 
 export function FilterTabs({
@@ -19,8 +21,25 @@ export function FilterTabs({
   value: string;
   onChange: (label: string) => void;
 }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Zonder dit blijft de balk op desktop onbereikbaar voor alles voorbij het
+  // scherm: de scrollbar is bewust verborgen (.osw-scroll) en een gewoon
+  // muiswiel scrollt alleen verticaal. Verticale wielbeweging hier vertalen
+  // naar horizontale scroll geeft desktopgebruikers dezelfde swipe-ervaring
+  // als touch.
+  function handleWheel(e: React.WheelEvent<HTMLDivElement>) {
+    const el = scrollerRef.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    e.preventDefault();
+    el.scrollLeft += e.deltaY;
+  }
+
   return (
     <div
+      ref={scrollerRef}
+      onWheel={handleWheel}
       className="osw-scroll flex gap-1.5 overflow-x-auto border-b px-4 py-2.5"
       style={{ background: "var(--head)", borderColor: "var(--bd)" }}
     >

@@ -8,6 +8,7 @@ export const CATEGORY_COLORS: Record<TopicCategory, string> = {
   EREDIVISIE: "#0F6E96",
   "EX-SPELER": "#9A6A06",
   WEDSTRIJD: "#1F8A3D",
+  VROUWENVOETBAL: "#C23B7A",
 };
 
 /** NL-weergavelabels voor categorieën (de enum-namen zijn systeemtaal). */
@@ -18,6 +19,7 @@ export const CATEGORY_LABEL: Record<TopicCategory, string> = {
   EREDIVISIE: "Eredivisie",
   "EX-SPELER": "Ex-speler",
   WEDSTRIJD: "Wedstrijd",
+  VROUWENVOETBAL: "Vrouwenvoetbal",
 };
 
 /** Alle categorie-chips hebben een verzadigde achtergrond, dus witte tekst. */
@@ -41,17 +43,6 @@ export const CONFIDENCE_LABEL: Record<ConfidenceLevel, string> = {
   GERUCHT: "Gerucht",
   PRAATPROGRAMMA: "Onbevestigd",
 };
-
-/**
- * Betrouwbaarheidsstip per bron-tier: groen (officieel/insider), geel
- * (regulier medium), grijs (fansite/praatprogramma). Tiers zelf zijn
- * backend-informatie en worden nooit als label getoond.
- */
-export function tierDotColor(tier: 1 | 2 | 3): string {
-  if (tier === 1) return "var(--confirmed)";
-  if (tier === 2) return "var(--rumor)";
-  return "var(--fg5)";
-}
 
 /** Positiekleuren: D=doel, V=verdediger, M=middenvelder, A=aanvaller. */
 export const POSITION_COLORS: Record<string, string> = {

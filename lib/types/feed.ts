@@ -16,12 +16,6 @@ export interface TopicTimelineEntry {
   headline: string;
   snippet: string;
   confidence: ConfidenceLevel;
-}
-
-export interface TopicSourceEntry {
-  name: string;
-  date: string;
-  tier: 1 | 2 | 3;
   /** Link naar het originele artikel bij deze bron. */
   url: string | null;
 }
@@ -44,7 +38,6 @@ export interface TopicComment {
 export interface TopicDetail {
   intro: TopicIntro | null;
   timeline: TopicTimelineEntry[];
-  sources: TopicSourceEntry[];
   comments: TopicComment[];
   sagaStartedAt: string;
 }
