@@ -5,6 +5,10 @@ name: Force topic images
 # die buiten het venster van de reguliere "Enrich items"-backfill zijn gevallen
 # (die kijkt alleen naar de 300 meest recent opgehaalde raw_items) en daardoor
 # nooit meer opnieuw geprobeerd worden.
+#
+# Met een image_url (en precies één slug) wordt niet geëxtraheerd maar die URL
+# hard op het nieuwste item van het topic gezet — laatste redmiddel voor
+# pagina's waar automatische extractie niets bruikbaars vindt.
 on:
   workflow_dispatch:
     inputs:
@@ -12,15 +16,27 @@ on:
         description: "Komma-gescheiden topic-slugs, bv. ajax-contracteert-kealyn-thomas-82ab80d4,..."
         type: string
         required: true
+      image_url:
+        description: "Optioneel: zet deze afbeeldings-URL hard op het topic (alleen bij precies één slug)"
+        type: string
+        required: false
+        default: ""
 
 jobs:
   force-images:
     runs-on: ubuntu-latest
     steps:
       - name: Forceer afbeelding-herstel voor opgegeven topics
+        env:
+          SLUGS: ${{ inputs.slugs }}
+          IMAGE_URL: ${{ inputs.image_url }}
         run: |
+          QUERY="slugs=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['SLUGS']))")"
+          if [ -n "$IMAGE_URL" ]; then
+            QUERY="$QUERY&imageUrl=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['IMAGE_URL'], safe=''))")"
+          fi
           HTTP_CODE=$(curl -s --max-time 100 -o response.json -w '%{http_code}' \
-            -X POST "${{ vars.APP_URL }}/api/admin/force-topic-images?slugs=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${{ inputs.slugs }}")" \
+            -X POST "${{ vars.APP_URL }}/api/admin/force-topic-images?$QUERY" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}")
           echo "HTTP $HTTP_CODE"
           jq . response.json 2>/dev/null || cat response.json
@@ -31,7 +47,11 @@ jobs:
           {
             echo "## Force topic images"
             echo ""
-            echo "Topics gecheckt: $(jq -r '.topicsChecked' response.json) — afbeeldingen gevuld: $(jq -r '.imagesFilled' response.json) — nog steeds zonder afbeelding: $(jq -r '.stillMissing | join(\", \")' response.json)"
+            if [ -n "$IMAGE_URL" ]; then
+              echo "Handmatige afbeelding gezet: $(jq -r '.set // false' response.json) — topic: $(jq -r '.slug // "-"' response.json)"
+            else
+              echo "Topics gecheckt: $(jq -r '.topicsChecked' response.json) — afbeeldingen gevuld: $(jq -r '.imagesFilled' response.json) — nog steeds zonder afbeelding: $(jq -r '.stillMissing | join(\", \")' response.json)"
+            fi
             echo ""
             echo '```json'
             cat response.json
