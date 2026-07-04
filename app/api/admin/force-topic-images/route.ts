@@ -28,6 +28,16 @@ interface RawItemRow {
  *
  *   curl -X POST -H "Authorization: Bearer $ADMIN_SECRET" \
  *     "https://ossenworst.vercel.app/api/admin/force-topic-images?slugs=slug-een,slug-twee"
+ *
+ * Met ?imageUrl=… (één slug tegelijk) wordt niet geëxtraheerd maar de
+ * opgegeven URL hard op het nieuwste raw_item van het topic gezet — het
+ * laatste redmiddel voor pagina's waar automatische extractie niets bruikbaars
+ * vindt. De URL moet ge-urlencode zijn:
+ *
+ *   curl -G -X POST -H "Authorization: Bearer $ADMIN_SECRET" \
+ *     --data-urlencode "slugs=mijn-topic-slug" \
+ *     --data-urlencode "imageUrl=https://voorbeeld.nl/foto.jpg?width=1960" \
+ *     "https://ossenworst.vercel.app/api/admin/force-topic-images"
  */
 export async function POST(request: Request) {
   const expected = process.env.ADMIN_SECRET;
@@ -36,7 +46,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const slugs = (new URL(request.url).searchParams.get("slugs") ?? "")
+  const params = new URL(request.url).searchParams;
+  const slugs = (params.get("slugs") ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -44,12 +55,75 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "geen slugs opgegeven (?slugs=a,b,c)" }, { status: 400 });
   }
 
+  const imageUrl = params.get("imageUrl")?.trim() || null;
+  if (imageUrl) {
+    if (slugs.length !== 1) {
+      return NextResponse.json(
+        { error: "imageUrl werkt op één topic tegelijk: geef precies één slug op" },
+        { status: 400 }
+      );
+    }
+    if (!isUsableImageUrl(imageUrl)) {
+      return NextResponse.json(
+        { error: "imageUrl is geen bruikbare afbeeldings-URL (http(s), geen data-URI/SVG/pixel)" },
+        { status: 400 }
+      );
+    }
+  }
+
   try {
-    return await forceTopicImages(slugs);
+    return imageUrl ? await setTopicImage(slugs[0], imageUrl) : await forceTopicImages(slugs);
   } catch (err) {
     console.error("force-topic-images faalde:", err);
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
+}
+
+/**
+ * Zet een handmatig gekozen afbeelding op het nieuwste raw_item van een topic.
+ * enriched_at gaat mee zodat de backfill de handmatige keuze niet later
+ * overschrijft met een (mislukte) automatische extractie.
+ */
+async function setTopicImage(slug: string, imageUrl: string) {
+  const supabase = createServiceClient();
+
+  const { data: topic, error: topicError } = await supabase
+    .from("topics")
+    .select("id, slug, title")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (topicError) throw topicError;
+  if (!topic) {
+    return NextResponse.json({ error: `onbekend topic '${slug}'` }, { status: 404 });
+  }
+
+  // Het nieuwste item bepaalt de afbeelding in feed en detail (de UI probeert
+  // kandidaten nieuwste-eerst), dus daar moet de handmatige URL op staan.
+  const { data: latestItem, error: latestError } = await supabase
+    .from("topic_items")
+    .select("raw_item_id, reported_at")
+    .eq("topic_id", topic.id)
+    .order("reported_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestError) throw latestError;
+  if (!latestItem) {
+    return NextResponse.json({ error: `topic '${slug}' heeft geen items` }, { status: 404 });
+  }
+
+  const { error: updateError } = await supabase
+    .from("raw_items")
+    .update({ image_url: imageUrl, enriched_at: new Date().toISOString() })
+    .eq("id", latestItem.raw_item_id);
+  if (updateError) throw updateError;
+
+  return NextResponse.json({
+    slug: topic.slug,
+    title: topic.title,
+    rawItemId: latestItem.raw_item_id,
+    imageUrl,
+    set: true,
+  });
 }
 
 async function forceTopicImages(slugs: string[]) {
