@@ -183,8 +183,10 @@ export async function getLatestUpdateAt(): Promise<string | null> {
 
 function formatShortDate(iso: string): string {
   const d = new Date(iso);
-  const day = d.getUTCDate();
-  const month = d.toLocaleString("nl-NL", { month: "short", timeZone: "UTC" }).replace(".", "");
+  const day = Number(
+    d.toLocaleString("nl-NL", { day: "numeric", timeZone: "Europe/Amsterdam" })
+  );
+  const month = d.toLocaleString("nl-NL", { month: "short", timeZone: "Europe/Amsterdam" }).replace(".", "");
   return `${day} ${month}`;
 }
 
