@@ -35,6 +35,49 @@ const parser = new Parser<Record<string, unknown>, CustomItem>({
 
 const MAX_BODY_CHARS = 1200;
 
+const USER_AGENT = "OssenworstManager/1.0 (+https://ossenworst.nl)";
+// Sommige feed-CDN's (footballco, o-jogo) geven 403 op bot-achtige UA's;
+// een browser-UA als retry lost dat op.
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
+/**
+ * Maakt veelvoorkomende XML-fouten in feeds onschadelijk vóór het parsen:
+ * losse &-tekens (niet-geëscapete entities in URL's/titels) en control
+ * characters. Niet-Engelstalige feeds blijken dit in de praktijk vaak te
+ * hebben (FutbolRed, Gazeta Esportiva, L'Équipe).
+ */
+function sanitizeFeedXml(xml: string): string {
+  return xml
+    .replace(/^\uFEFF/, "")
+    // eslint-disable-next-line no-control-regex -- control chars zijn precies wat we strippen
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+    .replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);)/g, "&amp;");
+}
+
+/** Feed ophalen (met browser-UA-retry bij 403/429) en parsen (met sanitize-retry). */
+async function fetchAndParseFeed(feedUrl: string) {
+  const doFetch = (userAgent: string) =>
+    fetch(feedUrl, {
+      headers: { "User-Agent": userAgent, Accept: "application/rss+xml, application/xml, text/xml, */*" },
+      signal: AbortSignal.timeout(8000),
+      redirect: "follow",
+    });
+
+  let res = await doFetch(USER_AGENT);
+  if (res.status === 403 || res.status === 429) {
+    res = await doFetch(BROWSER_USER_AGENT);
+  }
+  if (!res.ok) throw new Error(`Status code ${res.status}`);
+
+  const xml = await res.text();
+  try {
+    return await parser.parseString(xml);
+  } catch {
+    return await parser.parseString(sanitizeFeedXml(xml));
+  }
+}
+
 /** Eén genormaliseerd feed-item, klaar voor raw_items (of voor de broncheck). */
 export interface ParsedFeedItem {
   external_id: string;
@@ -125,7 +168,7 @@ function imageUrlFor(item: FeedItem): string | null {
 export async function parseRssSource(source: Source): Promise<ParsedFeedItem[]> {
   if (!source.feed_url) throw new Error("geen feed_url ingesteld");
 
-  const feed = await parser.parseURL(source.feed_url);
+  const feed = await fetchAndParseFeed(source.feed_url);
   const isGnews = isGoogleNewsSource(source);
   const ageCutoff = Date.now() - MAX_ITEM_AGE_DAYS * 24 * 60 * 60 * 1000;
 
