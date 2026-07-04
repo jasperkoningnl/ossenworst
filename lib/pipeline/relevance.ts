@@ -28,6 +28,8 @@ export const AJAX_SOURCE_SLUGS = new Set([
   "ajax-showtime",
   "ajax-daily",
   "reddit-ajax",
+  // Ajax-getagde feed (feed/news.xml?tag=ajax) — per definitie over Ajax.
+  "voetbalprimeur",
 ]);
 
 // Bewust géén losse "eredivisie"/"knvb beker": die keywords lieten al het

@@ -28,7 +28,7 @@ export const sourceSeeds: SourceSeed[] = [
   { name: "ESPN NL", slug: "espn-nl", url: "https://www.espn.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "scrape", feedUrl: null, enabled: false },
   { name: "Voetbalzone", slug: "voetbalzone", url: "https://www.voetbalzone.nl", tier: 2, country: "NL", language: "nl", fetchMethod: "scrape", feedUrl: null, enabled: false },
   { name: "Soccernews", slug: "soccernews", url: "https://www.soccernews.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.soccernews.nl/feed", enabled: true },
-  { name: "Voetbalprimeur", slug: "voetbalprimeur", url: "https://www.voetbalprimeur.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.voetbalprimeur.nl/pagina/rss-feeds", enabled: false },
+  { name: "Voetbalprimeur", slug: "voetbalprimeur", url: "https://www.voetbalprimeur.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.voetbalprimeur.nl/feed/news.xml?tag=ajax", enabled: true },
   { name: "Ajax Showtime", slug: "ajax-showtime", url: "https://www.ajaxshowtime.com", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: null, enabled: false },
   { name: "Ajax Freaks", slug: "ajax-freaks", url: "https://www.ajaxfreaks.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "rss", feedUrl: "https://www.ajaxfreaks.nl/page/rss", enabled: true },
   { name: "Headliner.nl", slug: "headliner", url: "https://www.headliner.nl", tier: 3, country: "NL", language: "nl", fetchMethod: "scrape", feedUrl: null, enabled: false },
