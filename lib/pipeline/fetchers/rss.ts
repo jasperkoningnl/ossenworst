@@ -50,8 +50,7 @@ const BROWSER_USER_AGENT =
 function sanitizeFeedXml(xml: string): string {
   return xml
     .replace(/^\uFEFF/, "")
-    // eslint-disable-next-line no-control-regex -- control chars zijn precies wat we strippen
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
     .replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);)/g, "&amp;");
 }
 
