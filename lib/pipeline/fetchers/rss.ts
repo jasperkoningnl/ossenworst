@@ -1,4 +1,5 @@
 import Parser from "rss-parser";
+import * as cheerio from "cheerio";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Source } from "@/lib/types/database";
 import { decodeGoogleNewsUrl } from "@/lib/pipeline/google-news";
@@ -54,8 +55,8 @@ function sanitizeFeedXml(xml: string): string {
     .replace(/&(?!(?:#\d+|#x[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);)/g, "&amp;");
 }
 
-/** Feed ophalen (met browser-UA-retry bij 403/429) en parsen (met sanitize-retry). */
-async function fetchAndParseFeed(feedUrl: string) {
+/** Feed-XML ophalen, met browser-UA-retry bij 403/429. */
+async function fetchFeedXml(feedUrl: string): Promise<string> {
   const doFetch = (userAgent: string) =>
     fetch(feedUrl, {
       headers: { "User-Agent": userAgent, Accept: "application/rss+xml, application/xml, text/xml, */*" },
@@ -69,7 +70,11 @@ async function fetchAndParseFeed(feedUrl: string) {
   }
   if (!res.ok) throw new Error(`Status code ${res.status}`);
 
-  const xml = await res.text();
+  return res.text();
+}
+
+/** RSS/Atom parsen, met sanitize-retry voor kapotte XML. */
+async function parseFeedXml(xml: string) {
   try {
     return await parser.parseString(xml);
   } catch {
@@ -158,6 +163,55 @@ function imageUrlFor(item: FeedItem): string | null {
   return html.match(/<img[^>]+src="(https?:\/\/[^"]+)"/i)?.[1] ?? null;
 }
 
+// Nieuws-sitemaps kunnen honderden URL's bevatten; alleen de nieuwste
+// vermeldingen zijn interessant voor een actuele feed.
+const MAX_SITEMAP_ITEMS = 50;
+
+/**
+ * Google News-sitemap (urlset met news:-namespace) naar genormaliseerde
+ * items. Per <url>: loc (link + dedup-sleutel), news:title,
+ * news:publication_date en image:loc.
+ */
+function parseNewsSitemap(xml: string, source: Source): ParsedFeedItem[] {
+  const $ = cheerio.load(xml, { xmlMode: true });
+  const ageCutoff = Date.now() - MAX_ITEM_AGE_DAYS * 24 * 60 * 60 * 1000;
+  const items: ParsedFeedItem[] = [];
+
+  $("url").each((_i, el) => {
+    if (items.length >= MAX_SITEMAP_ITEMS) return false;
+    const $el = $(el);
+
+    const loc = $el.find("loc").first().text().trim();
+    const title = $el.find("news\\:title").first().text().trim();
+    if (!loc || !title) return;
+
+    const dateRaw = $el.find("news\\:publication_date").first().text().trim();
+    let publishedAt: string | null = null;
+    if (dateRaw) {
+      const parsed = new Date(dateRaw);
+      if (!isNaN(parsed.getTime())) {
+        if (parsed.getTime() < ageCutoff) return;
+        publishedAt = parsed.toISOString();
+      }
+    }
+
+    const imageUrl = $el.find("image\\:loc").first().text().trim() || null;
+
+    items.push({
+      external_id: loc,
+      url: loc,
+      title,
+      body: null,
+      published_at: publishedAt,
+      language: source.language,
+      publisher_name: null,
+      image_url: imageUrl,
+    });
+  });
+
+  return items;
+}
+
 /**
  * Haalt en normaliseert de items van een RSS-bron zónder iets op te slaan.
  * Verouderde items (ouder dan MAX_ITEM_AGE_DAYS) worden genegeerd zodat
@@ -167,7 +221,16 @@ function imageUrlFor(item: FeedItem): string | null {
 export async function parseRssSource(source: Source): Promise<ParsedFeedItem[]> {
   if (!source.feed_url) throw new Error("geen feed_url ingesteld");
 
-  const feed = await fetchAndParseFeed(source.feed_url);
+  const xml = await fetchFeedXml(source.feed_url);
+
+  // Sommige sites (Ajax Showtime) hebben geen RSS maar wel een Google News-
+  // sitemap (<urlset> met news:-tags) — die kent titel, datum en afbeelding,
+  // maar geen intro; de verrijkingsstap haalt die van de artikelpagina.
+  if (/<urlset[\s>]/.test(xml)) {
+    return parseNewsSitemap(xml, source);
+  }
+
+  const feed = await parseFeedXml(xml);
   const isGnews = isGoogleNewsSource(source);
   const ageCutoff = Date.now() - MAX_ITEM_AGE_DAYS * 24 * 60 * 60 * 1000;
 
