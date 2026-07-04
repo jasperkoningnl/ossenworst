@@ -159,8 +159,14 @@ function imageUrlFor(item: FeedItem): string | null {
     return enclosure.url;
   }
 
+  // <img> uit de content is de minst betrouwbare bron: tracking-pixels en
+  // spacers leveren kapotte/onzichtbare "afbeeldingen" op in de feed.
   const html = item.contentEncoded || item.content || "";
-  return html.match(/<img[^>]+src="(https?:\/\/[^"]+)"/i)?.[1] ?? null;
+  const fromContent = html.match(/<img[^>]+src="(https?:\/\/[^"]+)"/i)?.[1] ?? null;
+  if (fromContent && /pixel|spacer|1x1|doubleclick|feedburner|\.svg($|\?)/i.test(fromContent)) {
+    return null;
+  }
+  return fromContent;
 }
 
 // Nieuws-sitemaps kunnen honderden URL's bevatten; alleen de nieuwste
