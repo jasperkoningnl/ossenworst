@@ -31,6 +31,7 @@ export interface EnrichableRawItem {
 export interface EnrichedFields {
   url: string;
   body: string | null;
+  imageUrl: string | null;
 }
 
 export async function enrichRawItem(
@@ -47,7 +48,7 @@ export async function enrichRawItem(
   } = {}
 ): Promise<EnrichedFields> {
   if (rawItem.enriched_at) {
-    return { url: rawItem.url, body: rawItem.body };
+    return { url: rawItem.url, body: rawItem.body, imageUrl: rawItem.image_url };
   }
 
   let url = rawItem.url;
@@ -102,5 +103,5 @@ export async function enrichRawItem(
     })
     .eq("id", rawItem.id);
 
-  return { url, body };
+  return { url, body, imageUrl };
 }

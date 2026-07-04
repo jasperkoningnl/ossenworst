@@ -94,7 +94,15 @@ async function fetchLatestItems(
   if (error) console.error("Laatste bron-items ophalen mislukt:", error.message);
 
   for (const row of (rows ?? []) as TopicItemRow[]) {
-    if (!latest.has(row.topic_id)) latest.set(row.topic_id, latestInfoFromRow(row));
+    const existing = latest.get(row.topic_id);
+    if (!existing) {
+      latest.set(row.topic_id, latestInfoFromRow(row));
+    } else if (!existing.imageUrl) {
+      // Kop/intro komen van het nieuwste item, maar als dat geen afbeelding
+      // heeft, gebruiken we de nieuwste afbeelding van een eerder item.
+      const rawItem = row.raw_items as { image_url: string | null } | null;
+      if (rawItem?.image_url) existing.imageUrl = rawItem.image_url;
+    }
   }
   return latest;
 }
@@ -241,12 +249,17 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   // Kop en intro komen van de meest recente bron; de items staan oplopend
   // gesorteerd, dus dat is de laatste rij.
   const latestRow = items[items.length - 1];
+  // Zelfde fallback als in de feed: nieuwste item is leidend, maar zonder
+  // eigen afbeelding pakken we de nieuwste afbeelding van een eerder item.
+  const newestImage = [...items].reverse().find((row) => row.rawItem?.image_url)?.rawItem
+    ?.image_url ?? null;
+
   const latest: LatestItemInfo | undefined = latestRow
     ? {
         title: latestRow.rawItem?.title ?? null,
         body: latestRow.rawItem?.body ?? null,
         url: latestRow.rawItem?.url ?? null,
-        imageUrl: latestRow.rawItem?.image_url ?? null,
+        imageUrl: latestRow.rawItem?.image_url ?? newestImage,
         sourceName: latestRow ? displayName(latestRow) : null,
       }
     : undefined;

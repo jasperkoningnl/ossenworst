@@ -31,5 +31,5 @@ jobs:
           {
             echo "## Enrich items"
             echo ""
-            echo "Kandidaten: $(jq -r '.candidates' response.json) — verwerkt: $(jq -r '.processed' response.json) — Google News-links herleid: $(jq -r '.resolved' response.json) — nog Google News: $(jq -r '.stillGoogle' response.json) — fouten: $(jq -r '.failures' response.json) — resterend: $(jq -r '.remaining' response.json)"
+            echo "Kandidaten: $(jq -r '.candidates' response.json) — verwerkt: $(jq -r '.processed' response.json) — afbeeldingen gevuld: $(jq -r '.imagesFilled // 0' response.json) — Google News-links herleid: $(jq -r '.resolved' response.json) — nog Google News: $(jq -r '.stillGoogle' response.json) — fouten: $(jq -r '.failures' response.json) — resterend: $(jq -r '.remaining' response.json)"
           } >> "$GITHUB_STEP_SUMMARY"
