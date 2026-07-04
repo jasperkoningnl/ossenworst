@@ -47,9 +47,9 @@ export function TopicCard({ item }: { item: TopicFeedItem }) {
               </p>
             )}
           </div>
-          {item.imageUrl && (
+          {item.imageUrls.length > 0 && (
             <ArticleImage
-              src={item.imageUrl}
+              srcs={item.imageUrls}
               className="h-[72px] w-[96px] flex-none rounded-md border object-cover"
               style={{ borderColor: "var(--bd)" }}
             />

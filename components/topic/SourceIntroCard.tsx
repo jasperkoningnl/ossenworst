@@ -17,9 +17,9 @@ export function SourceIntroCard({ intro }: { intro: TopicIntro }) {
           Volgens {intro.sourceName}
         </span>
       </div>
-      {intro.imageUrl && (
+      {intro.imageUrls.length > 0 && (
         <ArticleImage
-          src={intro.imageUrl}
+          srcs={intro.imageUrls}
           className="max-h-56 w-full border-b object-cover"
           style={{ borderColor: "var(--bd)" }}
         />

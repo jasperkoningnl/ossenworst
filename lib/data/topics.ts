@@ -16,12 +16,13 @@ const TEASER_MAX_LENGTH = 200;
 // zijn binnengekomen.
 const MAX_FEED_AGE_DAYS = 30;
 
-/** Kop, intro, link, afbeelding en bronnaam van het meest recente item van een topic. */
+/** Kop, intro, link, afbeeldingen en bronnaam van het meest recente item van een topic. */
 interface LatestItemInfo {
   title: string | null;
   body: string | null;
   url: string | null;
-  imageUrl: string | null;
+  /** Alle afbeeldingen van het topic, nieuwste bron eerst — de UI probeert ze op volgorde. */
+  imageUrls: string[];
   sourceName: string | null;
 }
 
@@ -62,7 +63,7 @@ function latestInfoFromRow(row: TopicItemRow): LatestItemInfo {
     title: rawItem?.title ?? null,
     body: rawItem?.body ?? null,
     url: rawItem?.url ?? null,
-    imageUrl: rawItem?.image_url ?? null,
+    imageUrls: rawItem?.image_url ? [rawItem.image_url] : [],
     sourceName: sourceDisplayName(
       rawItem?.publisher_name ?? null,
       source?.name ?? null,
@@ -96,11 +97,14 @@ async function fetchLatestItems(
     const existing = latest.get(row.topic_id);
     if (!existing) {
       latest.set(row.topic_id, latestInfoFromRow(row));
-    } else if (!existing.imageUrl) {
-      // Kop/intro komen van het nieuwste item, maar als dat geen afbeelding
-      // heeft, gebruiken we de nieuwste afbeelding van een eerder item.
+    } else {
+      // Kop/intro komen van het nieuwste item; de afbeeldingen van eerdere
+      // items gaan als fallback-kandidaten mee (nieuwste eerst), zodat de UI
+      // kan doorschakelen als een afbeelding niet laadt.
       const rawItem = row.raw_items as { image_url: string | null } | null;
-      if (rawItem?.image_url) existing.imageUrl = rawItem.image_url;
+      if (rawItem?.image_url && !existing.imageUrls.includes(rawItem.image_url)) {
+        existing.imageUrls.push(rawItem.image_url);
+      }
     }
   }
   return latest;
@@ -112,7 +116,7 @@ function toFeedItem(topic: Topic, latest: LatestItemInfo | undefined, commentCou
     title: latest?.title ?? topic.title,
     // Alinea-witruimte plat slaan: de teaser is één doorlopende feed-regel.
     teaser: truncate((latest?.body ?? topic.summary ?? "").replace(/\s+/g, " "), TEASER_MAX_LENGTH),
-    imageUrl: latest?.imageUrl ?? null,
+    imageUrls: latest?.imageUrls ?? [],
     sourceCount: topic.item_count,
     commentCount,
   };
@@ -260,17 +264,23 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
   // Kop en intro komen van de meest recente bron; de items staan oplopend
   // gesorteerd, dus dat is de laatste rij.
   const latestRow = items[items.length - 1];
-  // Zelfde fallback als in de feed: nieuwste item is leidend, maar zonder
-  // eigen afbeelding pakken we de nieuwste afbeelding van een eerder item.
-  const newestImage = [...items].reverse().find((row) => row.rawItem?.image_url)?.rawItem
-    ?.image_url ?? null;
+  // Zelfde fallback als in de feed: alle afbeeldingen van het topic als
+  // kandidaten, nieuwste bron eerst — de UI schakelt door als er één niet laadt.
+  const imageUrls = [
+    ...new Set(
+      [...items]
+        .reverse()
+        .map((row) => row.rawItem?.image_url)
+        .filter((url): url is string => Boolean(url))
+    ),
+  ];
 
   const latest: LatestItemInfo | undefined = latestRow
     ? {
         title: latestRow.rawItem?.title ?? null,
         body: latestRow.rawItem?.body ?? null,
         url: latestRow.rawItem?.url ?? null,
-        imageUrl: latestRow.rawItem?.image_url ?? newestImage,
+        imageUrls,
         sourceName: latestRow ? displayName(latestRow) : null,
       }
     : undefined;
@@ -282,7 +292,7 @@ export async function getTopicDetailBySlug(slug: string): Promise<{ item: TopicF
           text: introText,
           sourceName: latest.sourceName ?? "onbekende bron",
           url: latest.url,
-          imageUrl: latest.imageUrl,
+          imageUrls: latest.imageUrls,
         }
       : null;
 
