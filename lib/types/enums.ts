@@ -5,7 +5,7 @@ export const TOPIC_CATEGORIES = [
   "EREDIVISIE",
   "EX-SPELER",
   "WEDSTRIJD",
-  "VROUWENVOETBAL",
+  "VROUWEN",
 ] as const;
 export type TopicCategory = (typeof TOPIC_CATEGORIES)[number];
 

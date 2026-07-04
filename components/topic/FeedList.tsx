@@ -13,7 +13,7 @@ const CATEGORY_BY_FILTER: Record<string, string> = {
   Eredivisie: "EREDIVISIE",
   "Ex-spelers": "EX-SPELER",
   Wedstrijden: "WEDSTRIJD",
-  Vrouwenvoetbal: "VROUWENVOETBAL",
+  Vrouwen: "VROUWEN",
 };
 
 export function FeedList({ items }: { items: TopicFeedItem[] }) {

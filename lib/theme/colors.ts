@@ -8,7 +8,7 @@ export const CATEGORY_COLORS: Record<TopicCategory, string> = {
   EREDIVISIE: "#0F6E96",
   "EX-SPELER": "#9A6A06",
   WEDSTRIJD: "#1F8A3D",
-  VROUWENVOETBAL: "#C23B7A",
+  VROUWEN: "#C23B7A",
 };
 
 /** NL-weergavelabels voor categorieën (de enum-namen zijn systeemtaal). */
@@ -19,7 +19,7 @@ export const CATEGORY_LABEL: Record<TopicCategory, string> = {
   EREDIVISIE: "Eredivisie",
   "EX-SPELER": "Ex-speler",
   WEDSTRIJD: "Wedstrijd",
-  VROUWENVOETBAL: "Vrouwenvoetbal",
+  VROUWEN: "Vrouwen",
 };
 
 /** Alle categorie-chips hebben een verzadigde achtergrond, dus witte tekst. */
