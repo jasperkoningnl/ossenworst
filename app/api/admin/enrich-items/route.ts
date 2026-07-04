@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { enrichRawItem } from "@/lib/pipeline/enrich";
 import { isGoogleNewsUrl } from "@/lib/pipeline/google-news";
+import { isUsableImageUrl } from "@/lib/utils/image";
 
 export const maxDuration = 300;
 
@@ -68,8 +69,11 @@ async function enrichItems(force: boolean) {
     .select("id, url, body, language, publisher_name, image_url, enriched_at, sources(slug, fetch_method)")
     .not("topic_id", "is", null);
   if (!force) {
+    // image_url.like.data:* vangt lazy-load-placeholders (data-URI's) die een
+    // eerdere extractie als afbeelding opsloeg — die rijen zouden anders
+    // buiten alle criteria vallen en nooit meer hersteld worden.
     query = query.or(
-      `enriched_at.is.null,url.ilike.%news.google.com%,and(image_url.is.null,enriched_at.lt.${retryCutoff})`
+      `enriched_at.is.null,url.ilike.%news.google.com%,image_url.like.data:*,and(image_url.is.null,enriched_at.lt.${retryCutoff})`
     );
   }
   // Op fetched_at aflopend sorteren zou bij een backlog groter dan MAX_ITEMS
@@ -103,6 +107,11 @@ async function enrichItems(force: boolean) {
       item.language === "nl" &&
       (source?.fetch_method === "scrape" || (item.body?.length ?? 0) < 500);
 
+    // Placeholder-junk (data-URI's van lazy-loading) telt als "geen
+    // afbeelding": anders sluit enriched_at deze rijen kort en worden ze
+    // nooit hersteld.
+    const hadUsableImage = isUsableImageUrl(item.image_url);
+
     try {
       const result = await enrichRawItem(
         supabase,
@@ -118,7 +127,7 @@ async function enrichItems(force: boolean) {
           // Opnieuw verrijken als de URL nog op Google News wijst, de
           // afbeelding ontbreekt (items van vóór de image-ondersteuning) of
           // de herstelmodus actief is.
-          enriched_at: wasGoogle || !item.image_url || forceIntro ? null : item.enriched_at,
+          enriched_at: wasGoogle || !hadUsableImage || forceIntro ? null : item.enriched_at,
         },
         // Niet-NL items zijn al vertaald: hun body niet overschrijven met een
         // vers gescrapete (buitenlandse) intro.
@@ -126,7 +135,7 @@ async function enrichItems(force: boolean) {
       );
 
       processed++;
-      if (!item.image_url && result.imageUrl) imagesFilled++;
+      if (!hadUsableImage && isUsableImageUrl(result.imageUrl)) imagesFilled++;
       if (wasGoogle) {
         if (isGoogleNewsUrl(result.url)) stillGoogle++;
         else resolved++;

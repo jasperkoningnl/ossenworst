@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isGoogleNewsUrl, publisherNameFromUrl, resolveGoogleNewsUrl } from "./google-news";
 import { fetchArticleIntro } from "./article-intro";
 import { truncate } from "@/lib/utils/text";
+import { isUsableImageUrl } from "@/lib/utils/image";
 
 /**
  * Eenmalige verrijking van een relevant raw_item, vlak vóór de (betaalde)
@@ -54,7 +55,9 @@ export async function enrichRawItem(
   let url = rawItem.url;
   let body = rawItem.body;
   let publisherName = rawItem.publisher_name;
-  let imageUrl = rawItem.image_url;
+  // Placeholder-junk (data-URI's, tracking-pixels) uit eerdere extracties telt
+  // als "geen afbeelding", zodat een verse extractie hem kan vervangen.
+  let imageUrl = isUsableImageUrl(rawItem.image_url) ? rawItem.image_url : null;
   const cameViaGoogleNews = isGoogleNewsUrl(rawItem.url);
 
   if (cameViaGoogleNews) {

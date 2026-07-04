@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { enrichRawItem } from "@/lib/pipeline/enrich";
+import { isUsableImageUrl } from "@/lib/utils/image";
 
 export const maxDuration = 120;
 
@@ -91,8 +92,11 @@ async function forceTopicImages(slugs: string[]) {
     for (const item of items) allRawItems.set(item.id, item);
   }
 
+  // Placeholder-junk (data-URI's van lazy-loading) telt niet als afbeelding:
+  // die rijen moeten juist opnieuw geëxtraheerd én in de telling als "was
+  // beeldloos" verschijnen.
   const hadImageBefore = new Set(
-    [...allRawItems.values()].filter((item) => item.image_url).map((item) => item.id)
+    [...allRawItems.values()].filter((item) => isUsableImageUrl(item.image_url)).map((item) => item.id)
   );
   const gotImage = new Set<string>();
   const failures: { id: string; url: string; error: string }[] = [];

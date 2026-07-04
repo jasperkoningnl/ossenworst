@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { isUsableImageUrl } from "@/lib/utils/image";
 
 /**
  * Haalt de intro (lead/eerste alinea's) van een artikelpagina op, zodat de
@@ -39,9 +40,10 @@ export interface ArticleIntro {
 }
 
 // Bestandsnaam-patronen die vrijwel nooit de hoofdafbeelding zijn: logo's,
-// iconen, tracking-pixels — de <img>-fallback zou deze anders per ongeluk
-// als artikelafbeelding oppikken.
-const NON_CONTENT_IMAGE_RE = /logo|icon|avatar|sprite|placeholder|pixel|spacer|favicon/i;
+// iconen — de <img>-fallback zou deze anders per ongeluk als
+// artikelafbeelding oppikken. Pixels/spacers/placeholders vangt
+// isUsableImageUrl al af.
+const NON_CONTENT_IMAGE_RE = /logo|icon|avatar|sprite|favicon/i;
 
 function resolveMaybeRelative(href: string, baseUrl: string): string | null {
   try {
@@ -51,18 +53,29 @@ function resolveMaybeRelative(href: string, baseUrl: string): string | null {
   }
 }
 
-/** Eerste bruikbare <img> binnen de artikeltekst — laatste redmiddel als de pagina geen og:image/twitter:image heeft. */
+/**
+ * Eerste bruikbare <img> binnen de artikeltekst — laatste redmiddel als de
+ * pagina geen og:image/twitter:image heeft. Lazy-loading zet vaak een
+ * transparante data-URI-placeholder in src en het echte beeld in
+ * data-src/srcset; daarom alle attributen als kandidaten proberen en pas een
+ * URL accepteren als hij door isUsableImageUrl komt.
+ */
 function firstContentImage($: cheerio.CheerioAPI, baseUrl: string): string | null {
-  const candidates = $("article img, main img").toArray();
-  for (const el of candidates) {
+  for (const el of $("article img, main img").toArray()) {
     const $el = $(el);
     if ($el.parents(NON_ARTICLE_ANCESTORS).length > 0) continue;
-    const src = $el.attr("src") || $el.attr("data-src") || $el.attr("srcset")?.split(/\s+/)[0];
-    if (!src || NON_CONTENT_IMAGE_RE.test(src) || src.endsWith(".svg")) continue;
-    try {
-      return new URL(src, baseUrl).href;
-    } catch {
-      continue;
+    const candidates = [
+      $el.attr("src"),
+      $el.attr("data-src"),
+      $el.attr("data-lazy-src"),
+      $el.attr("data-original"),
+      $el.attr("srcset")?.split(/[\s,]+/)[0],
+      $el.attr("data-srcset")?.split(/[\s,]+/)[0],
+    ];
+    for (const candidate of candidates) {
+      if (!candidate || NON_CONTENT_IMAGE_RE.test(candidate)) continue;
+      const resolved = resolveMaybeRelative(candidate, baseUrl);
+      if (resolved && isUsableImageUrl(resolved)) return resolved;
     }
   }
   return null;
@@ -128,15 +141,26 @@ export async function fetchArticleIntro(url: string): Promise<ArticleIntro> {
   const siteName = $('meta[property="og:site_name"]').attr("content")?.trim() || null;
   // og:image/twitter:image dekken bijna alle sites; ontbreken ze (bv. sommige
   // clubsites zonder social-meta), dan proberen we JSON-LD-structured data en
-  // als laatste redmiddel de eerste echte artikelafbeelding in de HTML.
-  const imageSrcHref = $('link[rel="image_src"]').attr("href")?.trim();
-  const imageUrl =
-    $('meta[property="og:image"]').attr("content")?.trim() ||
-    $('meta[name="twitter:image"]').attr("content")?.trim() ||
-    (imageSrcHref ? resolveMaybeRelative(imageSrcHref, res.url || url) : null) ||
-    imageFromJsonLd($) ||
-    firstContentImage($, res.url || url) ||
-    null;
+  // als laatste redmiddel de eerste echte artikelafbeelding in de HTML. Elke
+  // kandidaat moet door isUsableImageUrl: ook meta-tags bevatten soms
+  // placeholders of SVG-logo's.
+  const baseUrl = res.url || url;
+  const metaCandidates = [
+    $('meta[property="og:image"]').attr("content"),
+    $('meta[property="og:image:secure_url"]').attr("content"),
+    $('meta[name="twitter:image"]').attr("content"),
+    $('link[rel="image_src"]').attr("href"),
+    imageFromJsonLd($),
+  ];
+  let imageUrl: string | null = null;
+  for (const candidate of metaCandidates) {
+    const resolved = candidate ? resolveMaybeRelative(candidate.trim(), baseUrl) : null;
+    if (resolved && isUsableImageUrl(resolved)) {
+      imageUrl = resolved;
+      break;
+    }
+  }
+  if (!imageUrl) imageUrl = firstContentImage($, baseUrl);
   const metaDescription =
     $('meta[property="og:description"]').attr("content")?.trim() ||
     $('meta[name="description"]').attr("content")?.trim() ||
