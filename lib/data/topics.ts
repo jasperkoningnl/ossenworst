@@ -74,8 +74,9 @@ function latestInfoFromRow(row: TopicItemRow): LatestItemInfo {
 }
 
 /**
- * Meest recente item per topic: de kop en intro van de laatst rapporterende
- * bron zijn leidend in de feed en op de detailpagina.
+ * Meest recente item per topic: de intro/teaser van de laatst rapporterende
+ * bron beweegt mee in de feed en op de detailpagina. De topicnaam zelf blijft
+ * vast (zie toFeedItem) — die komt niet van dit item.
  */
 async function fetchLatestItems(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -99,7 +100,7 @@ async function fetchLatestItems(
     if (!existing) {
       latest.set(row.topic_id, latestInfoFromRow(row));
     } else {
-      // Kop/intro komen van het nieuwste item; de afbeeldingen van eerdere
+      // De intro/teaser komt van het nieuwste item; de afbeeldingen van eerdere
       // items gaan als fallback-kandidaten mee (nieuwste eerst), zodat de UI
       // kan doorschakelen als een afbeelding niet laadt.
       const rawItem = row.raw_items as { image_url: string | null } | null;
@@ -114,7 +115,12 @@ async function fetchLatestItems(
 function toFeedItem(topic: Topic, latest: LatestItemInfo | undefined, commentCount: number): TopicFeedItem {
   return {
     ...topic,
-    title: latest?.title ?? topic.title,
+    // De naam van een topic is het onderwerp en blijft vast (gezet bij het
+    // aanmaken van het topic). Bewust NIET de kop van het nieuwste item: dan
+    // verschoof de topicnaam bij elke nieuwe bron en zag je niet meer waar het
+    // topic over gaat. De actualiteit komt uit de teaser/intro hieronder, die
+    // wél met het nieuwste item meebeweegt.
+    title: topic.title,
     // Alinea-witruimte plat slaan: de teaser is één doorlopende feed-regel.
     teaser: truncate((latest?.body ?? topic.summary ?? "").replace(/\s+/g, " "), TEASER_MAX_LENGTH),
     imageUrls: latest?.imageUrls ?? [],
